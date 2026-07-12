@@ -27,7 +27,7 @@
       pointer-events: none;
       background: #0b1020;
     }
-    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
 
     /* HERO */
     .hero { text-align: center; padding: 48px 20px 34px; }
@@ -105,13 +105,13 @@
     .bento-icon { font-size: 2.2rem; margin-bottom: 12px; }
     .bento-card h3 { font-size: 1.25rem; color: #fff; font-weight: 700; margin-bottom: 6px; }
     .bento-card p { font-size: 0.92rem; color: #a0aec0; line-height: 1.5; margin-bottom: 18px; }
-    /* Desktop: cards ~50% bigger, text ~60% bigger */
+    /* Desktop card sizing (~25% smaller than the previous round) */
     @media (min-width: 769px) {
-      .bento-card { padding: 42px; min-height: 340px; }
-      .bento-icon { font-size: 3.2rem; margin-bottom: 16px; }
-      .bento-card h3 { font-size: 2rem; margin-bottom: 10px; }
-      .bento-card p { font-size: 1.45rem; line-height: 1.45; margin-bottom: 24px; }
-      .card-btn { font-size: 1.25rem; padding: 16px 34px; }
+      .bento-card { padding: 32px; min-height: 255px; }
+      .bento-icon { font-size: 2.4rem; margin-bottom: 12px; }
+      .bento-card h3 { font-size: 1.5rem; margin-bottom: 8px; }
+      .bento-card p { font-size: 1.1rem; line-height: 1.45; margin-bottom: 18px; }
+      .card-btn { font-size: 1rem; padding: 12px 26px; }
     }
     .card-btn {
       padding: 12px 24px;
@@ -194,14 +194,14 @@
       color: #e8eef7;
       animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    /* Desktop: BIG modals — 90vw (capped 1700px), tall */
+    /* Desktop modals — ~15% smaller than the previous round */
     @media (min-width: 769px) {
       .modal-content {
-        width: min(90vw, 1700px);
-        max-width: min(90vw, 1700px);
+        width: min(78vw, 1450px);
+        max-width: min(78vw, 1450px);
         min-width: 680px;
-        min-height: 85vh;
-        max-height: 95vh;
+        min-height: 72vh;
+        max-height: 92vh;
       }
     }
     @keyframes slideUp {
@@ -363,8 +363,8 @@
       margin-top: 18px;
     }
     .week-head { font-size: 0.98rem; font-weight: 700; color: #d8b4fe; margin-bottom: 10px; }
-    .chart-wrap { position: relative; height: 380px; }
-    .chart-wrap canvas { max-height: 380px; }
+    .chart-wrap { position: relative; height: 320px; }
+    .chart-wrap canvas { max-height: 320px; }
 
     /* table — fills the panel; wide min-width so ALL columns readable via scroll */
     .table-wrap { overflow-x: auto; margin-top: 12px; border-radius: 10px; scrollbar-width: thin; max-height: 420px; overflow-y: auto; }
