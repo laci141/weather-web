@@ -1,8 +1,9 @@
 # Stage 1: Build weather-goat CLI + weather-web server
 FROM golang:1.26-alpine AS builder
+RUN apk add --no-cache git
 WORKDIR /app
 
-# Download printing-press-library (weather-goat CLI)
+# Download printing-press-library + build weather-goat CLI
 RUN git clone --depth 1 https://github.com/mvanhorn/printing-press-library.git /ppl && \
     cd /ppl/library/other/weather-goat && \
     CGO_ENABLED=0 GOOS=linux go build -o /app/bin/weather-goat-pp-cli ./cmd/weather-goat-pp-cli
@@ -19,7 +20,6 @@ FROM alpine:latest
 RUN apk add --no-cache ca-certificates
 WORKDIR /app
 
-# Copy binaries + HTML from builder
 COPY --from=builder /app/bin/weather-goat-pp-cli /app/bin/weather-goat-pp-cli
 COPY --from=builder /app/server .
 COPY --from=builder /app/index.html .
