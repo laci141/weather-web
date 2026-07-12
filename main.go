@@ -61,11 +61,44 @@ func setCORS(w http.ResponseWriter) {
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 }
 
-// --- CLI-backed endpoints (unchanged) ---
+// --- units ---
+// unitSpec arrives from the client and is mapped onto Open-Meteo / CLI unit
+// parameters. Every value is validated against an allow-list; anything else
+// falls back to the European/metric default.
+
+type unitSpec struct {
+	Temperature   string `json:"temperature"`   // celsius | fahrenheit
+	Wind          string `json:"wind"`          // kmh | mph
+	Precipitation string `json:"precipitation"` // mm | inch
+}
+
+func (u unitSpec) temp() string {
+	if u.Temperature == "fahrenheit" {
+		return "fahrenheit"
+	}
+	return "celsius"
+}
+
+func (u unitSpec) wind() string {
+	if u.Wind == "mph" {
+		return "mph"
+	}
+	return "kmh"
+}
+
+func (u unitSpec) precip() string {
+	if u.Precipitation == "inch" {
+		return "inch"
+	}
+	return "mm"
+}
+
+// --- CLI-backed endpoints ---
 
 type forecastRequest struct {
-	Latitude  float64 `json:"latitude"`
-	Longitude float64 `json:"longitude"`
+	Latitude  float64  `json:"latitude"`
+	Longitude float64  `json:"longitude"`
+	Units     unitSpec `json:"units"`
 }
 
 func handleForecast(w http.ResponseWriter, r *http.Request) {
@@ -85,9 +118,13 @@ func handleForecast(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// The CLI defaults to fahrenheit/mph — always pass explicit units so the
+	// European default (celsius/kmh) actually reaches the API.
 	cmd := exec.Command(cliBinary(), "forecast",
 		"--latitude", fmt.Sprintf("%f", req.Latitude),
 		"--longitude", fmt.Sprintf("%f", req.Longitude),
+		"--temperature-unit", req.Units.temp(),
+		"--wind-speed-unit", req.Units.wind(),
 		"--json")
 	out, err := cmd.Output()
 	if err != nil {
@@ -145,6 +182,7 @@ type historyRequest struct {
 	StartDate string   `json:"start_date"`
 	EndDate   string   `json:"end_date"`
 	Fields    []string `json:"fields"`
+	Units     unitSpec `json:"units"`
 }
 
 // dateRe strictly validates YYYY-MM-DD before the value goes into an outbound
@@ -154,26 +192,35 @@ var dateRe = regexp.MustCompile(`^\d{4}-\d{2}-\d{2}$`)
 var meteoClient = &http.Client{Timeout: 60 * time.Second}
 
 // allow-lists: only these field names may reach the upstream query string.
+// Expanded to the full set of Open-Meteo variables the UI can request.
 var dailyFields = map[string]bool{
 	"temperature_2m_max": true, "temperature_2m_min": true, "temperature_2m_mean": true,
-	"precipitation_sum": true, "rain_sum": true, "snowfall_sum": true,
-	"wind_speed_10m_max": true, "wind_gusts_10m_max": true, "wind_direction_10m_dominant": true,
+	"apparent_temperature_max": true, "apparent_temperature_min": true,
 	"relative_humidity_2m_max": true, "relative_humidity_2m_min": true,
-	"surface_pressure_mean": true, "cloud_cover_mean": true, "sunshine_duration": true,
+	"dew_point_2m_max": true, "dew_point_2m_min": true,
+	"precipitation_sum": true, "rain_sum": true, "snowfall_sum": true,
+	"surface_pressure_mean": true, "cloud_cover_mean": true,
+	"wind_speed_10m_max": true, "wind_gusts_10m_max": true, "wind_direction_10m_dominant": true,
+	"sunshine_duration": true, "shortwave_radiation_sum": true,
 }
 
 var hourlyFields = map[string]bool{
-	"temperature_2m": true, "relative_humidity_2m": true,
+	"temperature_2m": true, "apparent_temperature": true,
+	"relative_humidity_2m": true, "dew_point_2m": true,
 	"precipitation": true, "rain": true, "snowfall": true,
+	"surface_pressure": true, "cloud_cover": true,
 	"wind_speed_10m": true, "wind_gusts_10m": true, "wind_direction_10m": true,
-	"surface_pressure": true, "cloud_cover": true, "sunshine_duration": true,
+	"sunshine_duration": true, "shortwave_radiation": true,
 }
 
-// minutely_15 supports a subset of the hourly variables.
+// minutely_15 supports a subset of the hourly variables (no surface_pressure,
+// no cloud_cover).
 var minutelyFields = map[string]bool{
-	"temperature_2m": true, "relative_humidity_2m": true,
+	"temperature_2m": true, "apparent_temperature": true,
+	"relative_humidity_2m": true, "dew_point_2m": true,
 	"precipitation": true, "rain": true, "snowfall": true,
 	"wind_speed_10m": true, "wind_gusts_10m": true, "wind_direction_10m": true,
+	"sunshine_duration": true, "shortwave_radiation": true,
 }
 
 // filterFields keeps only allow-listed names; returns def when nothing survives.
@@ -192,7 +239,8 @@ func filterFields(req []string, allowed map[string]bool, def string) string {
 }
 
 // proxyMeteo validates the request, builds the upstream URL with the given
-// resolution parameter (daily / hourly / minutely_15), and streams back JSON.
+// resolution parameter (daily / hourly / minutely_15) and unit parameters,
+// and streams back JSON.
 func proxyMeteo(w http.ResponseWriter, r *http.Request, base, param string, allowed map[string]bool, def string) {
 	if r.Method == http.MethodOptions {
 		setCORS(w)
@@ -221,6 +269,10 @@ func proxyMeteo(w http.ResponseWriter, r *http.Request, base, param string, allo
 	params.Set("end_date", req.EndDate)
 	params.Set(param, filterFields(req.Fields, allowed, def))
 	params.Set("timezone", "auto")
+	// unit params — European/metric defaults unless the client toggled
+	params.Set("temperature_unit", req.Units.temp())
+	params.Set("wind_speed_unit", req.Units.wind())
+	params.Set("precipitation_unit", req.Units.precip())
 
 	resp, err := meteoClient.Get(base + "?" + params.Encode())
 	if err != nil {
@@ -272,9 +324,10 @@ func handleHistoryHourly(w http.ResponseWriter, r *http.Request) {
 		"temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m")
 }
 
-// POST /api/recent-minutely — 15-minute data via the forecast API; Open-Meteo
-// keeps roughly the last 3 months of minutely_15 history. Client validates the
-// window; upstream errors pass through as 502 with the API's message.
+// POST /api/minutely (and legacy /api/recent-minutely) — 15-minute data via
+// the forecast API; Open-Meteo keeps roughly the last 3 months of minutely_15
+// history plus ~16 days of forecast. Client validates the window; upstream
+// errors pass through as 502 with the API's message.
 func handleRecentMinutely(w http.ResponseWriter, r *http.Request) {
 	proxyMeteo(w, r, forecastBase, "minutely_15", minutelyFields,
 		"temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m")

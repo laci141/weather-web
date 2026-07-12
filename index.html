@@ -11,22 +11,23 @@
     html { scroll-behavior: smooth; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-      background: #0a0e27;
-      color: #e0e0e0;
+      margin: 0;
+      min-height: 100vh;
+      background: #0b1020;
+      color: #e8eef7;
       overflow-x: hidden;
     }
-    /* colorful radial gradient BEHIND the glass so blur is visible */
+    /* Clean dark background — NO page-side glow blobs. All colored glow comes
+       from the per-panel halo rings (box-shadow on cards/modals). */
     body::before {
-      content: '';
+      content: "";
       position: fixed;
       inset: 0;
-      background: radial-gradient(ellipse at 25% 20%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),
-                  radial-gradient(ellipse at 75% 60%, rgba(139, 92, 246, 0.14) 0%, transparent 50%),
-                  radial-gradient(ellipse at 50% 100%, rgba(14, 165, 233, 0.10) 0%, transparent 60%);
-      pointer-events: none;
       z-index: -1;
+      pointer-events: none;
+      background: #0b1020;
     }
-    .container { max-width: 1040px; margin: 0 auto; padding: 20px; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
 
     /* HERO */
     .hero { text-align: center; padding: 48px 20px 34px; }
@@ -42,22 +43,26 @@
     }
     .hero p { color: #a0aec0; font-size: 1rem; }
 
-    /* GLASS PANEL — 18px desktop / 11px mobile */
+    /* GLASS PANEL — Laci's skill: gradient glass, 15px desktop / 11px mobile */
     .glass {
-      background: rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 18px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      background: linear-gradient(160deg, rgba(255,255,255,.07), rgba(255,255,255,.045));
+      border: 1px solid rgba(255,255,255,.10);
+      border-radius: 20px;
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      box-shadow: 0 18px 50px -18px rgba(0,0,0,.75);
+      color: #e8eef7;
     }
 
-    /* BENTO GRID */
+    /* BENTO GRID — wide gaps so the per-card glow can breathe */
     .bento-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 22px;
-      margin-bottom: 40px;
+      margin-bottom: 44px;
+    }
+    @media (min-width: 769px) {
+      .bento-grid { gap: 50px; }
     }
     .bento-card {
       padding: 28px;
@@ -79,14 +84,35 @@
     .bento-card:hover {
       transform: translateY(-6px);
       border-color: rgba(255, 255, 255, 0.22);
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
     }
-    .bento-card.blue   { --a1: #3b82f6; --a2: #0ea5e9; }
-    .bento-card.purple { --a1: #8b5cf6; --a2: #d946ef; }
-    .bento-card.green  { --a1: #22c55e; --a2: #10b981; }
+    /* per-card colored glow halo hugging each panel (kept alongside the dark
+       drop shadow); hover intensifies it */
+    .bento-card.blue {
+      --a1: #3b82f6; --a2: #0ea5e9;
+      box-shadow: 0 0 30px 2px rgba(56,189,248,.25), 0 18px 50px -18px rgba(0,0,0,.75);
+    }
+    .bento-card.blue:hover { box-shadow: 0 0 40px 4px rgba(56,189,248,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
+    .bento-card.purple {
+      --a1: #8b5cf6; --a2: #d946ef;
+      box-shadow: 0 0 30px 2px rgba(168,85,247,.25), 0 18px 50px -18px rgba(0,0,0,.75);
+    }
+    .bento-card.purple:hover { box-shadow: 0 0 40px 4px rgba(168,85,247,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
+    .bento-card.green {
+      --a1: #22c55e; --a2: #10b981;
+      box-shadow: 0 0 30px 2px rgba(34,197,94,.25), 0 18px 50px -18px rgba(0,0,0,.75);
+    }
+    .bento-card.green:hover { box-shadow: 0 0 40px 4px rgba(34,197,94,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
     .bento-icon { font-size: 2.2rem; margin-bottom: 12px; }
     .bento-card h3 { font-size: 1.25rem; color: #fff; font-weight: 700; margin-bottom: 6px; }
     .bento-card p { font-size: 0.92rem; color: #a0aec0; line-height: 1.5; margin-bottom: 18px; }
+    /* Desktop: cards ~50% bigger, text ~60% bigger */
+    @media (min-width: 769px) {
+      .bento-card { padding: 42px; min-height: 340px; }
+      .bento-icon { font-size: 3.2rem; margin-bottom: 16px; }
+      .bento-card h3 { font-size: 2rem; margin-bottom: 10px; }
+      .bento-card p { font-size: 1.45rem; line-height: 1.45; margin-bottom: 24px; }
+      .card-btn { font-size: 1.25rem; padding: 16px 34px; }
+    }
     .card-btn {
       padding: 12px 24px;
       min-height: 44px;
@@ -101,7 +127,43 @@
     }
     .card-btn:hover { transform: scale(1.03); }
 
-    /* MODAL */
+    /* GLOBAL UNIT TOGGLES */
+    .units-bar {
+      display: flex;
+      gap: 18px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      padding: 16px 20px;
+      margin-bottom: 40px;
+      box-shadow: 0 0 30px 2px rgba(56,189,248,.18), 0 18px 50px -18px rgba(0,0,0,.75);
+    }
+    .units-title { font-size: 0.9rem; color: #94a3b8; font-weight: 600; }
+    .seg { display: inline-flex; align-items: center; gap: 6px; }
+    .seg .seg-label { font-size: 0.85rem; color: #cbd5e1; }
+    .seg-btns {
+      display: inline-flex;
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .seg-btns button {
+      background: rgba(255,255,255,0.05);
+      border: none;
+      color: #8b93a7;
+      padding: 10px 16px;
+      min-height: 44px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .seg-btns button.on {
+      background: linear-gradient(135deg, #3b82f6, #0ea5e9);
+      color: #fff;
+    }
+
+    /* MODAL — DISTINCT desktop widths per tool, 95% mobile */
     .modal {
       display: none;
       position: fixed;
@@ -116,19 +178,31 @@
     .modal.open { display: flex; animation: fadeIn 0.3s ease-out; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     .modal-content {
-      background: rgba(20, 25, 40, 0.95);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: linear-gradient(160deg, rgba(30,38,60,.92), rgba(20,26,44,.94));
+      backdrop-filter: blur(15px);
+      -webkit-backdrop-filter: blur(15px);
+      border: 1px solid rgba(255,255,255,.10);
       border-radius: 20px;
-      padding: 30px;
-      max-width: 680px;
-      width: 92%;
-      max-height: 88vh;
+      padding: 34px;
+      width: 94%;
+      max-height: 90vh;
       overflow-y: auto;
       position: relative;
-      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+      /* colored halo around the opened panel, matching the tool accent */
+      box-shadow: 0 0 34px 3px color-mix(in srgb, var(--a1, #3b82f6) 30%, transparent),
+                  0 18px 50px -18px rgba(0,0,0,.75);
+      color: #e8eef7;
       animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    /* Desktop: BIG modals — 90vw (capped 1700px), tall */
+    @media (min-width: 769px) {
+      .modal-content {
+        width: min(90vw, 1700px);
+        max-width: min(90vw, 1700px);
+        min-width: 680px;
+        min-height: 85vh;
+        max-height: 95vh;
+      }
     }
     @keyframes slideUp {
       from { transform: translateY(20px); opacity: 0; }
@@ -183,22 +257,30 @@
       border-color: rgba(59, 130, 246, 0.6);
     }
 
-    /* PILL TOGGLES (checkboxes + radios rendered as chips) */
+    /* PILL TOGGLES — even grid: 4 per row desktop, 2 per row mobile */
+    .pill-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+      margin-bottom: 16px;
+    }
     .pill-set { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
     .pill {
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 6px;
-      padding: 10px 16px;
+      padding: 10px 14px;
       min-height: 44px;
       border-radius: 22px;
       border: 1px solid rgba(255,255,255,0.18);
       background: rgba(255,255,255,0.05);
       color: #8b93a7;
       cursor: pointer;
-      font-size: 0.9rem;
+      font-size: 0.88rem;
       font-weight: 500;
       user-select: none;
+      white-space: nowrap;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .pill input { display: none; }
@@ -208,6 +290,7 @@
       background: color-mix(in srgb, var(--pc, #3b82f6) 22%, transparent);
       box-shadow: 0 0 14px color-mix(in srgb, var(--pc, #3b82f6) 45%, transparent);
     }
+    .pill.disabled { opacity: 0.35; pointer-events: none; }
     .pill-label { font-size: 0.88rem; color: #cbd5e1; font-weight: 500; margin-bottom: 8px; }
 
     .btn {
@@ -245,6 +328,14 @@
       color: #fca5a5;
       margin-top: 16px;
     }
+    .info-box {
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.45);
+      border-radius: 10px;
+      padding: 13px;
+      color: #fcd34d;
+      margin-top: 16px;
+    }
     .ok-box {
       background: rgba(34, 197, 94, 0.15);
       border: 1px solid rgba(34, 197, 94, 0.5);
@@ -258,36 +349,55 @@
     .loc-sub { font-size: 0.85rem; color: #94a3b8; margin-bottom: 14px; }
 
     /* forecast current conditions */
-    .current-grid { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 14px; }
-    .current-item { text-align: center; min-width: 84px; }
-    .current-item .val { font-size: 1.5rem; font-weight: 700; color: #fff; }
-    .current-item .lbl { font-size: 0.78rem; color: #94a3b8; }
+    .current-grid { display: flex; gap: 24px; flex-wrap: wrap; margin-top: 14px; }
+    .current-item { text-align: center; min-width: 90px; }
+    .current-item .val { font-size: 1.6rem; font-weight: 700; color: #fff; }
+    .current-item .lbl { font-size: 0.8rem; color: #94a3b8; }
 
-    /* weekly block */
+    /* result block (weekly for daily; single for hourly/15-min) */
     .week-block {
       border: 1px solid rgba(255,255,255,0.1);
       border-radius: 14px;
       background: rgba(255,255,255,0.03);
-      padding: 16px;
+      padding: 18px;
       margin-top: 18px;
     }
     .week-head { font-size: 0.98rem; font-weight: 700; color: #d8b4fe; margin-bottom: 10px; }
-    .chart-wrap { position: relative; max-height: 340px; }
-    .chart-wrap canvas { max-height: 340px; }
+    .chart-wrap { position: relative; height: 380px; }
+    .chart-wrap canvas { max-height: 380px; }
 
-    /* table */
-    .table-wrap { overflow-x: auto; margin-top: 12px; border-radius: 10px; }
-    table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 0.85rem; }
+    /* table — fills the panel; wide min-width so ALL columns readable via scroll */
+    .table-wrap { overflow-x: auto; margin-top: 12px; border-radius: 10px; scrollbar-width: thin; max-height: 420px; overflow-y: auto; }
+    .table-wrap::-webkit-scrollbar { height: 8px; width: 8px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.45); border-radius: 4px; }
+    .table-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+    table { border-collapse: collapse; width: 100%; font-size: 0.88rem; table-layout: auto; }
     th {
       background: rgba(139, 92, 246, 0.15);
       color: #d8b4fe;
       font-weight: 600;
+      position: sticky;
+      top: 0;
+      background-color: #1f1a33;
     }
-    th, td { text-align: right; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
+    th, td { text-align: right; padding: 9px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
     th:first-child, td:first-child { text-align: left; }
     tr:hover td { background: rgba(255,255,255,0.03); }
 
     .dl-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+
+    /* Modal text ~20% bigger for readability (labels, inputs, chips, tables) */
+    .modal-content .form-group label { font-size: 1.06rem; }
+    .modal-content .form-group input { font-size: 1.2rem; }
+    .modal-content .pill-label { font-size: 1.06rem; }
+    .modal-content .pill { font-size: 1.06rem; }
+    .modal-content table { font-size: 1.06rem; }
+    .modal-content th, .modal-content td { padding: 11px 18px; }
+    .modal-content .week-head { font-size: 1.18rem; }
+    .modal-content .loc-header { font-size: 1.26rem; }
+    .modal-content .loc-sub { font-size: 1.02rem; }
+    .modal-content h2 { font-size: 1.8rem; }
+    .modal-content .btn { font-size: 1.2rem; }
 
     .footer {
       text-align: center;
@@ -297,7 +407,8 @@
       color: #64748b;
     }
 
-    /* MOBILE — 1 column, blur 11px, full-width stacked controls */
+    /* MOBILE — 1 column, blur 11px, chips 2-per-row, full-width stacked
+       controls, NOTHING wider than 100vw */
     @media (max-width: 768px) {
       .hero h1 { font-size: 2rem; }
       .glass, .modal-content {
@@ -305,12 +416,28 @@
         -webkit-backdrop-filter: blur(11px);
       }
       .bento-grid { grid-template-columns: 1fr; }
-      .modal-content { width: 95%; padding: 20px; }
+      .units-bar { flex-direction: column; gap: 10px; }
+      .modal-content { width: 95vw; max-width: 95vw; padding: 16px; max-height: 92vh; }
       .form-row { flex-direction: column; }
       .form-group { min-width: 100%; }
-      .chart-wrap, .chart-wrap canvas { max-height: 320px; }
+      .pill-grid { grid-template-columns: repeat(2, 1fr); }
+      .pill { white-space: normal; text-align: center; }
+      .chart-wrap, .chart-wrap canvas { height: 250px; max-height: 260px; }
+      .table-wrap { max-width: 100%; }
+      .current-grid { gap: 14px; }
+      .current-item { min-width: 40%; }
       .dl-row { flex-direction: column; }
       .dl-row .btn { width: 100%; }
+    }
+    /* Small-phone glass tweak (Laci's skill) */
+    @media (max-width: 600px) {
+      .glass, .modal-content, .week-block {
+        border-radius: 16px;
+        backdrop-filter: blur(11px);
+        -webkit-backdrop-filter: blur(11px);
+        box-shadow: 0 12px 32px -14px rgba(0,0,0,.7);
+      }
+      .bento-card { padding: 20px; }
     }
   </style>
 </head>
@@ -333,7 +460,7 @@
       <div class="bento-card glass purple" onclick="openModal('viewModal')">
         <div class="bento-icon">📅</div>
         <h3>Historical View</h3>
-        <p>Daily weather back to 1940 — weekly charts &amp; tables, pick exactly the fields you want. Max 5 weeks.</p>
+        <p>Back to 1940 — daily, hourly, or 15-min charts &amp; tables, pick from every field Open-Meteo has.</p>
         <button class="card-btn">Open</button>
       </div>
       <div class="bento-card glass green" onclick="openModal('dlModal')">
@@ -342,6 +469,29 @@
         <p>Bulk export — daily, hourly, 3-hourly or 15-min resolution → XLSX, CSV or JSON. No on-screen render.</p>
         <button class="card-btn">Open</button>
       </div>
+    </div>
+
+    <!-- GLOBAL UNIT TOGGLES -->
+    <div class="units-bar glass">
+      <span class="units-title">⚙️ Units</span>
+      <span class="seg">
+        <span class="seg-label">🌡️ Temp:</span>
+        <span class="seg-btns" data-unit="temp">
+          <button class="on" data-val="celsius">°C</button><button data-val="fahrenheit">°F</button>
+        </span>
+      </span>
+      <span class="seg">
+        <span class="seg-label">💨 Wind:</span>
+        <span class="seg-btns" data-unit="wind">
+          <button class="on" data-val="kmh">km/h</button><button data-val="mph">mph</button>
+        </span>
+      </span>
+      <span class="seg">
+        <span class="seg-label">🌧️ Precip:</span>
+        <span class="seg-btns" data-unit="precip">
+          <button class="on" data-val="mm">mm</button><button data-val="inch">inch</button>
+        </span>
+      </span>
     </div>
   </div>
 
@@ -364,11 +514,11 @@
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('viewModal')">×</button>
       <h2>📅 Historical View (1940–today)</h2>
-      <div class="form-group">
-        <label for="hvCity">City</label>
-        <input type="text" id="hvCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runView()">
-      </div>
       <div class="form-row">
+        <div class="form-group">
+          <label for="hvCity">City</label>
+          <input type="text" id="hvCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runView()">
+        </div>
         <div class="form-group">
           <label for="hvFrom">From</label>
           <input type="date" id="hvFrom" value="1966-05-05" min="1940-01-01">
@@ -378,14 +528,14 @@
           <input type="date" id="hvTo" value="1966-06-05" min="1940-01-01">
         </div>
       </div>
-      <div class="pill-label">Fields to display</div>
-      <div class="pill-set" id="hvPills">
-        <label class="pill on" style="--pc:#ef4444"><input type="checkbox" data-key="temp" checked>🌡️ Temperature</label>
-        <label class="pill on" style="--pc:#22c55e"><input type="checkbox" data-key="humidity" checked>💧 Humidity</label>
-        <label class="pill on" style="--pc:#06b6d4"><input type="checkbox" data-key="precip" checked>🌧️ Precipitation</label>
-        <label class="pill on" style="--pc:#8b5cf6"><input type="checkbox" data-key="rainsnow" checked>🌨️ Rain/Snow</label>
-        <label class="pill on" style="--pc:#f59e0b"><input type="checkbox" data-key="wind" checked>💨 Wind speed</label>
+      <div class="pill-label">Resolution <span style="color:#64748b">(daily ≤35 days · hourly ≤3 days · 15-min ≤1 day, last ~3 months)</span></div>
+      <div class="pill-set" id="hvRes">
+        <label class="pill on" style="--pc:#d946ef"><input type="radio" name="hvres" value="daily" checked>📆 Daily</label>
+        <label class="pill" style="--pc:#d946ef"><input type="radio" name="hvres" value="1h">🕐 1 hour</label>
+        <label class="pill" style="--pc:#d946ef"><input type="radio" name="hvres" value="15min">⏱️ 15 min</label>
       </div>
+      <div class="pill-label">Fields to display</div>
+      <div class="pill-grid" id="hvPills"></div>
       <button class="btn btn-purple" id="hvBtn" onclick="runView()">Get History</button>
       <div id="hvResult"></div>
     </div>
@@ -396,11 +546,11 @@
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('dlModal')">×</button>
       <h2>💾 Data Downloader</h2>
-      <div class="form-group">
-        <label for="dlCity">City</label>
-        <input type="text" id="dlCity" placeholder="e.g. Oradea">
-      </div>
       <div class="form-row">
+        <div class="form-group">
+          <label for="dlCity">City</label>
+          <input type="text" id="dlCity" placeholder="e.g. Oradea">
+        </div>
         <div class="form-group">
           <label for="dlFrom">From</label>
           <input type="date" id="dlFrom" value="1985-01-01" min="1940-01-01">
@@ -415,19 +565,10 @@
         <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="daily">📆 Daily</label>
         <label class="pill on" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="1h" checked>🕐 1 hour</label>
         <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="3h">🕒 3 hours</label>
-        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="15min">⏱️ 10/15 min</label>
+        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="15min">⏱️ 15 min</label>
       </div>
       <div class="pill-label">Fields</div>
-      <div class="pill-set" id="dlPills">
-        <label class="pill on" style="--pc:#ef4444"><input type="checkbox" data-key="temp" checked>🌡️ Temperature</label>
-        <label class="pill" style="--pc:#22c55e"><input type="checkbox" data-key="humidity">💧 Humidity</label>
-        <label class="pill" style="--pc:#06b6d4"><input type="checkbox" data-key="precip">🌧️ Precipitation</label>
-        <label class="pill" style="--pc:#8b5cf6"><input type="checkbox" data-key="rainsnow">🌨️ Rain/Snow</label>
-        <label class="pill" style="--pc:#f59e0b"><input type="checkbox" data-key="wind">💨 Wind speed</label>
-        <label class="pill" style="--pc:#64748b"><input type="checkbox" data-key="pressure">🧭 Pressure</label>
-        <label class="pill" style="--pc:#a3a3a3"><input type="checkbox" data-key="cloud">☁️ Cloud cover</label>
-        <label class="pill" style="--pc:#f97316"><input type="checkbox" data-key="winddir">🧭 Wind direction</label>
-      </div>
+      <div class="pill-grid" id="dlPills"></div>
       <div class="dl-row">
         <button class="btn btn-green" onclick="runDownload('xlsx')">📥 Download XLSX</button>
         <button class="btn btn-gray" onclick="runDownload('csv')">📄 Download CSV</button>
@@ -450,25 +591,75 @@
       return d.innerHTML;
     }
     const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+    const TODAY = new Date().toISOString().slice(0, 10);
+    const MIN_DATE = '1940-01-01';
 
-    // ---------- modal plumbing: listeners attached ONCE ----------
-    function openModal(id) {
-      document.getElementById(id).classList.add('open');
+    // ---------- field catalogue ----------
+    const FIELDS = {
+      temp:      { daily: ['temperature_2m_max', 'temperature_2m_min'], hourly: ['temperature_2m'],       chip: '🌡️ Temperature',   color: '#ef4444', minutely: true },
+      apptemp:   { daily: ['apparent_temperature_max', 'apparent_temperature_min'], hourly: ['apparent_temperature'], chip: '🥵 Feels like', color: '#f472b6', minutely: true },
+      humidity:  { daily: ['relative_humidity_2m_max', 'relative_humidity_2m_min'], hourly: ['relative_humidity_2m'], chip: '💧 Humidity', color: '#22c55e', minutely: true },
+      dewpoint:  { daily: ['dew_point_2m_max', 'dew_point_2m_min'], hourly: ['dew_point_2m'],             chip: '💦 Dew point',      color: '#14b8a6', minutely: true },
+      precip:    { daily: ['precipitation_sum'], hourly: ['precipitation'],                               chip: '🌧️ Precipitation', color: '#06b6d4', minutely: true },
+      rainsnow:  { daily: ['rain_sum', 'snowfall_sum'], hourly: ['rain', 'snowfall'],                     chip: '🌨️ Rain/Snow',     color: '#8b5cf6', minutely: true },
+      pressure:  { daily: ['surface_pressure_mean'], hourly: ['surface_pressure'],                        chip: '🧭 Pressure',       color: '#64748b', minutely: false },
+      cloud:     { daily: ['cloud_cover_mean'], hourly: ['cloud_cover'],                                  chip: '☁️ Cloud cover',    color: '#a3a3a3', minutely: false },
+      wind:      { daily: ['wind_speed_10m_max'], hourly: ['wind_speed_10m'],                             chip: '💨 Wind speed',     color: '#f59e0b', minutely: true },
+      gusts:     { daily: ['wind_gusts_10m_max'], hourly: ['wind_gusts_10m'],                             chip: '🌬️ Wind gusts',    color: '#fb923c', minutely: true },
+      winddir:   { daily: ['wind_direction_10m_dominant'], hourly: ['wind_direction_10m'],                chip: '↗️ Wind direction', color: '#f97316', minutely: true },
+      sunshine:  { daily: ['sunshine_duration'], hourly: ['sunshine_duration'],                           chip: '☀️ Sunshine',       color: '#fde047', minutely: true },
+      radiation: { daily: ['shortwave_radiation_sum'], hourly: ['shortwave_radiation'],                   chip: '🔆 Radiation',      color: '#fbbf24', minutely: true }
+    };
+    const HV_DEFAULTS = ['temp', 'humidity', 'precip', 'rainsnow', 'wind'];
+    const DL_DEFAULTS = ['temp'];
+
+    function buildPills(containerId, defaults) {
+      const box = document.getElementById(containerId);
+      box.innerHTML = Object.entries(FIELDS).map(([key, f]) => {
+        const on = defaults.includes(key);
+        return `<label class="pill${on ? ' on' : ''}" style="--pc:${f.color}" data-pill="${key}">` +
+               `<input type="checkbox" data-key="${key}"${on ? ' checked' : ''}>${f.chip}</label>`;
+      }).join('');
     }
-    function closeModal(id) {
-      document.getElementById(id).classList.remove('open');
+    buildPills('hvPills', HV_DEFAULTS);
+    buildPills('dlPills', DL_DEFAULTS);
+
+    document.querySelectorAll('input[type="date"]').forEach(i => {
+      i.min = MIN_DATE;
+      i.max = TODAY;
+    });
+
+    // ---------- global units ----------
+    const UNITS = { temp: 'celsius', wind: 'kmh', precip: 'mm' };
+    const UNIT_SYMBOL = {
+      temp: { celsius: '°C', fahrenheit: '°F' },
+      wind: { kmh: 'km/h', mph: 'mph' },
+      precip: { mm: 'mm', inch: 'in' }
+    };
+    document.querySelectorAll('.seg-btns').forEach(seg => {
+      seg.addEventListener('click', (e) => {
+        const btn = e.target.closest('button');
+        if (!btn) return;
+        UNITS[seg.dataset.unit] = btn.dataset.val;
+        seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === btn));
+      });
+    });
+    function unitsBody() {
+      return { temperature: UNITS.temp, wind: UNITS.wind, precipitation: UNITS.precip };
     }
+    function tempSym() { return UNIT_SYMBOL.temp[UNITS.temp]; }
+    function windSym() { return UNIT_SYMBOL.wind[UNITS.wind]; }
+    function precSym() { return UNIT_SYMBOL.precip[UNITS.precip]; }
+
+    // ---------- modal plumbing (listeners attached ONCE) ----------
+    function openModal(id) { document.getElementById(id).classList.add('open'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
     document.addEventListener('click', (e) => {
-      if (e.target.classList && e.target.classList.contains('modal')) {
-        e.target.classList.remove('open');
-      }
+      if (e.target.classList && e.target.classList.contains('modal')) e.target.classList.remove('open');
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') {
-        document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
-      }
+      if (e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
     });
-    // pill toggle visual state (delegated, attached once)
     document.addEventListener('change', (e) => {
       const input = e.target;
       if (!input.matches('.pill input')) return;
@@ -476,10 +667,22 @@
         document.querySelectorAll(`input[name="${input.name}"]`).forEach(r => {
           r.closest('.pill').classList.toggle('on', r.checked);
         });
+        if (input.name === 'dlres') updatePillAvailability('dlRes', 'dlPills');
+        if (input.name === 'hvres') updatePillAvailability('hvRes', 'hvPills');
       } else {
         input.closest('.pill').classList.toggle('on', input.checked);
       }
     });
+    // grey out fields unsupported at the chosen resolution
+    function updatePillAvailability(resId, pillsId) {
+      const res = document.querySelector(`#${resId} input:checked`).value;
+      document.querySelectorAll(`#${pillsId} .pill`).forEach(p => {
+        const supported = res !== '15min' || FIELDS[p.dataset.pill].minutely;
+        p.classList.toggle('disabled', !supported);
+      });
+    }
+    updatePillAvailability('dlRes', 'dlPills');
+    updatePillAvailability('hvRes', 'hvPills');
 
     // ---------- shared fetch ----------
     async function postJSON(path, body) {
@@ -503,6 +706,18 @@
       return list[0];
     }
 
+    function validDates(from, to, out, minD, maxD) {
+      minD = minD || MIN_DATE;
+      maxD = maxD || TODAY;
+      const bad = (s) => !DATE_RE.test(s) || s < minD || s > maxD;
+      if (bad(from) || bad(to)) {
+        out.innerHTML = `<div class="error-box">Invalid date. Use a date between ${minD} and ${maxD}.</div>`;
+        return false;
+      }
+      if (to < from) { out.innerHTML = '<div class="error-box">"To" must be on or after "From".</div>'; return false; }
+      return true;
+    }
+
     // ---------- FORECAST ----------
     async function runForecast() {
       const city = document.getElementById('fcCity').value.trim();
@@ -513,7 +728,7 @@
       btn.disabled = true;
       try {
         const loc = await geocode(city);
-        const d = await postJSON('/api/forecast', { latitude: loc.latitude, longitude: loc.longitude });
+        const d = await postJSON('/api/forecast', { latitude: loc.latitude, longitude: loc.longitude, units: unitsBody() });
         const r = d.results || {};
         const cur = r.current || {};
         const units = r.current_units || {};
@@ -535,158 +750,254 @@
       }
     }
 
-    // ---------- field maps ----------
-    // key -> {daily:[...], hourly:[...], label, cols:{field:short header}}
-    const FIELDS = {
-      temp:     { daily: ['temperature_2m_max', 'temperature_2m_min'], hourly: ['temperature_2m'],
-                  labels: { temperature_2m_max: 'Max °C', temperature_2m_min: 'Min °C', temperature_2m: 'Temp °C' } },
-      humidity: { daily: ['relative_humidity_2m_max'], hourly: ['relative_humidity_2m'],
-                  labels: { relative_humidity_2m_max: 'Humidity %', relative_humidity_2m: 'Humidity %' } },
-      precip:   { daily: ['precipitation_sum'], hourly: ['precipitation'],
-                  labels: { precipitation_sum: 'Precip mm', precipitation: 'Precip mm' } },
-      rainsnow: { daily: ['rain_sum', 'snowfall_sum'], hourly: ['rain', 'snowfall'],
-                  labels: { rain_sum: 'Rain mm', snowfall_sum: 'Snow cm', rain: 'Rain mm', snowfall: 'Snow cm' } },
-      wind:     { daily: ['wind_speed_10m_max'], hourly: ['wind_speed_10m'],
-                  labels: { wind_speed_10m_max: 'Wind km/h', wind_speed_10m: 'Wind km/h' } },
-      pressure: { daily: ['surface_pressure_mean'], hourly: ['surface_pressure'],
-                  labels: { surface_pressure_mean: 'Pressure hPa', surface_pressure: 'Pressure hPa' } },
-      cloud:    { daily: ['cloud_cover_mean'], hourly: ['cloud_cover'],
-                  labels: { cloud_cover_mean: 'Cloud %', cloud_cover: 'Cloud %' } },
-      winddir:  { daily: ['wind_direction_10m_dominant'], hourly: ['wind_direction_10m'],
-                  labels: { wind_direction_10m_dominant: 'Wind dir °', wind_direction_10m: 'Wind dir °' } }
-    };
-    // chart styling per field name
+    // unit-aware column label per field name
+    function fieldLabel(f) {
+      switch (f) {
+        case 'temperature_2m_max': return 'Max ' + tempSym();
+        case 'temperature_2m_min': return 'Min ' + tempSym();
+        case 'temperature_2m': return 'Temp ' + tempSym();
+        case 'apparent_temperature_max': return 'Feels max ' + tempSym();
+        case 'apparent_temperature_min': return 'Feels min ' + tempSym();
+        case 'apparent_temperature': return 'Feels ' + tempSym();
+        case 'relative_humidity_2m_max': return 'Hum max %';
+        case 'relative_humidity_2m_min': return 'Hum min %';
+        case 'relative_humidity_2m': return 'Humidity %';
+        case 'dew_point_2m_max': return 'Dew max ' + tempSym();
+        case 'dew_point_2m_min': return 'Dew min ' + tempSym();
+        case 'dew_point_2m': return 'Dew point ' + tempSym();
+        case 'precipitation_sum':
+        case 'precipitation': return 'Precip ' + precSym();
+        case 'rain_sum':
+        case 'rain': return 'Rain ' + precSym();
+        case 'snowfall_sum':
+        case 'snowfall': return 'Snow cm';
+        case 'surface_pressure_mean':
+        case 'surface_pressure': return 'Pressure hPa';
+        case 'cloud_cover_mean':
+        case 'cloud_cover': return 'Cloud %';
+        case 'wind_speed_10m_max':
+        case 'wind_speed_10m': return 'Wind ' + windSym();
+        case 'wind_gusts_10m_max':
+        case 'wind_gusts_10m': return 'Gusts ' + windSym();
+        case 'wind_direction_10m_dominant':
+        case 'wind_direction_10m': return 'Wind dir °';
+        case 'sunshine_duration': return 'Sunshine s';
+        case 'shortwave_radiation_sum': return 'Radiation MJ/m²';
+        case 'shortwave_radiation': return 'Radiation W/m²';
+        default: return f;
+      }
+    }
+    // chart styling — covers daily AND hourly/minutely field names
     const CHART_STYLE = {
       temperature_2m_max: { type: 'line', color: '#ef4444', axis: 'yMain' },
       temperature_2m_min: { type: 'line', color: '#3b82f6', axis: 'yMain' },
+      temperature_2m: { type: 'line', color: '#ef4444', axis: 'yMain' },
+      apparent_temperature_max: { type: 'line', color: '#f472b6', axis: 'yMain' },
+      apparent_temperature_min: { type: 'line', color: '#f9a8d4', axis: 'yMain' },
+      apparent_temperature: { type: 'line', color: '#f472b6', axis: 'yMain' },
       relative_humidity_2m_max: { type: 'line', color: '#22c55e', axis: 'yMain' },
+      relative_humidity_2m_min: { type: 'line', color: '#86efac', axis: 'yMain' },
+      relative_humidity_2m: { type: 'line', color: '#22c55e', axis: 'yMain' },
+      dew_point_2m_max: { type: 'line', color: '#14b8a6', axis: 'yMain' },
+      dew_point_2m_min: { type: 'line', color: '#5eead4', axis: 'yMain' },
+      dew_point_2m: { type: 'line', color: '#14b8a6', axis: 'yMain' },
       precipitation_sum: { type: 'bar', color: 'rgba(6,182,212,0.5)', axis: 'yMm' },
+      precipitation: { type: 'bar', color: 'rgba(6,182,212,0.5)', axis: 'yMm' },
       rain_sum: { type: 'bar', color: 'rgba(139,92,246,0.5)', axis: 'yMm' },
+      rain: { type: 'bar', color: 'rgba(139,92,246,0.5)', axis: 'yMm' },
       snowfall_sum: { type: 'bar', color: 'rgba(226,232,240,0.5)', axis: 'yMm' },
-      wind_speed_10m_max: { type: 'line', color: '#f59e0b', axis: 'yMain' }
+      snowfall: { type: 'bar', color: 'rgba(226,232,240,0.5)', axis: 'yMm' },
+      surface_pressure_mean: { type: 'line', color: '#94a3b8', axis: 'yAux' },
+      surface_pressure: { type: 'line', color: '#94a3b8', axis: 'yAux' },
+      cloud_cover_mean: { type: 'line', color: '#cbd5e1', axis: 'yMain' },
+      cloud_cover: { type: 'line', color: '#cbd5e1', axis: 'yMain' },
+      wind_speed_10m_max: { type: 'line', color: '#f59e0b', axis: 'yMain' },
+      wind_speed_10m: { type: 'line', color: '#f59e0b', axis: 'yMain' },
+      wind_gusts_10m_max: { type: 'line', color: '#fb923c', axis: 'yMain' },
+      wind_gusts_10m: { type: 'line', color: '#fb923c', axis: 'yMain' },
+      wind_direction_10m_dominant: { type: 'line', color: '#f97316', axis: 'yAux' },
+      wind_direction_10m: { type: 'line', color: '#f97316', axis: 'yAux' },
+      sunshine_duration: { type: 'line', color: '#fde047', axis: 'yAux' },
+      shortwave_radiation_sum: { type: 'line', color: '#fbbf24', axis: 'yAux' },
+      shortwave_radiation: { type: 'line', color: '#fbbf24', axis: 'yAux' }
     };
 
     function checkedKeys(setId) {
       return Array.from(document.querySelectorAll(`#${setId} input:checked`)).map(i => i.dataset.key);
     }
-    function validDates(from, to, out) {
-      if (!DATE_RE.test(from) || !DATE_RE.test(to)) { out.innerHTML = '<div class="error-box">Dates must be YYYY-MM-DD.</div>'; return false; }
-      if (to < from) { out.innerHTML = '<div class="error-box">"To" must be on or after "From".</div>'; return false; }
-      return true;
-    }
 
     // ---------- HISTORICAL VIEW ----------
     let viewCharts = [];
+
+    // draws one chart into canvasId from a column block (labels + field arrays)
+    function drawBlockChart(canvasId, labels, fields, block) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx || typeof Chart === 'undefined') return;
+      const datasets = fields.map(f => {
+        const st = CHART_STYLE[f] || { type: 'line', color: '#94a3b8', axis: 'yMain' };
+        return {
+          type: st.type,
+          label: fieldLabel(f),
+          data: block[f] || [],
+          borderColor: st.color,
+          backgroundColor: st.color,
+          yAxisID: st.axis,
+          tension: 0.3,
+          pointRadius: labels.length > 40 ? 0 : 2
+        };
+      });
+      const scales = {
+        x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0', maxTicksLimit: 14 } },
+        yMain: { position: 'left', grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0' } }
+      };
+      if (datasets.some(ds => ds.yAxisID === 'yMm')) {
+        scales.yMm = { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#a0aec0' }, beginAtZero: true, title: { display: true, text: precSym(), color: '#a0aec0' } };
+      }
+      if (datasets.some(ds => ds.yAxisID === 'yAux')) {
+        scales.yAux = { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#64748b' } };
+      }
+      viewCharts.push(new Chart(ctx, {
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { labels: { color: '#e0e0e0', boxWidth: 14, font: { size: 11 } } } },
+          scales
+        }
+      }));
+    }
+
+    function blockTable(times, fields, block, a, b, timeFmt) {
+      let h = '<div class="table-wrap"><table><tr><th>Time</th>';
+      fields.forEach(f => { h += `<th>${esc(fieldLabel(f))}</th>`; });
+      h += '</tr>';
+      for (let i = a; i < b; i++) {
+        h += `<tr><td>${esc(timeFmt(times[i]))}</td>`;
+        fields.forEach(f => {
+          const v = (block[f] || [])[i];
+          h += `<td>${v === null || v === undefined ? '—' : esc(v)}</td>`;
+        });
+        h += '</tr>';
+      }
+      return h + '</table></div>';
+    }
 
     async function runView() {
       const city = document.getElementById('hvCity').value.trim();
       const from = document.getElementById('hvFrom').value;
       const to = document.getElementById('hvTo').value;
       const out = document.getElementById('hvResult');
+      const reqRes = document.querySelector('#hvRes input:checked').value;
 
       if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
       if (!validDates(from, to, out)) return;
       const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
-      if (days > 35) { out.innerHTML = `<div class="error-box">Your range is ${days.toLocaleString()} days — max 5 weeks (35 days) for display. Check the From date, or use the Data Downloader for longer ranges.</div>`; return; }
       const keys = checkedKeys('hvPills');
       if (!keys.length) { out.innerHTML = '<div class="error-box">Select at least one field.</div>'; return; }
 
-      const fields = keys.flatMap(k => FIELDS[k].daily);
+      // ----- resolution resolution: caps + automatic fallback -----
+      let res = reqRes;
+      let notice = '';
+      const min15 = new Date(Date.now() - 92 * 86400000).toISOString().slice(0, 10);
+      if (res === '15min' && (from < min15)) {
+        res = '1h';
+        notice = `15-min data is not available for ${from} (only the last ~3 months) — showing hourly instead.`;
+      }
+      if (res === '15min' && days > 1) {
+        out.innerHTML = '<div class="error-box">15-min display is limited to 1 day (96 points). Pick a single day or use the Data Downloader.</div>';
+        return;
+      }
+      if (res === '1h' && days > 3) {
+        out.innerHTML = '<div class="error-box">Hourly display is limited to 3 days (72 points). Shorten the range or use the Data Downloader for longer.</div>';
+        return;
+      }
+      if (res === 'daily' && days > 35) {
+        out.innerHTML = `<div class="error-box">Your range is ${days.toLocaleString()} days — max 5 weeks (35 days) for daily display. Use the Data Downloader for longer ranges.</div>`;
+        return;
+      }
+
+      const mode = res === 'daily' ? 'daily' : 'hourly';
+      let useKeys = keys;
+      if (res === '15min') useKeys = keys.filter(k => FIELDS[k].minutely);
+      let fields = useKeys.flatMap(k => FIELDS[k][mode]);
+      if (!fields.length) { out.innerHTML = '<div class="error-box">The selected fields are not available at this resolution.</div>'; return; }
+
+      const endpoint = res === 'daily' ? '/api/history-daily'
+                     : res === '15min' ? '/api/minutely'
+                     : '/api/history-hourly';
+      const blockKey = res === 'daily' ? 'daily' : res === '15min' ? 'minutely_15' : 'hourly';
 
       out.innerHTML = '<div class="spinner"></div>';
       const btn = document.getElementById('hvBtn');
       btn.disabled = true;
       try {
         const loc = await geocode(city);
-        const d = await postJSON('/api/history-daily', {
+        let d = await postJSON(endpoint, {
           latitude: loc.latitude, longitude: loc.longitude,
-          start_date: from, end_date: to, fields
+          start_date: from, end_date: to, fields, units: unitsBody()
         });
-        const daily = d.daily || {};
-        const times = daily.time || [];
+        let block = d[blockKey] || {};
+        let times = block.time || [];
+        let usedRes = res;
+
+        // hourly empty → fall back to daily
+        if (!times.length && res !== 'daily') {
+          notice = (notice ? notice + ' ' : '') + `No ${res === '15min' ? '15-min' : 'hourly'} data returned — falling back to daily.`;
+          usedRes = 'daily';
+          fields = keys.flatMap(k => FIELDS[k].daily);
+          d = await postJSON('/api/history-daily', {
+            latitude: loc.latitude, longitude: loc.longitude,
+            start_date: from, end_date: to, fields, units: unitsBody()
+          });
+          block = d.daily || {};
+          times = block.time || [];
+        }
         if (!times.length) throw new Error('No archive data for this range. Archive data lags ~5 days — pick an end date at least 5 days ago.');
-        // archive lags ~5 days: recent dates can come back as all-null rows
-        const allNull = fields.every(f => (daily[f] || []).every(v => v === null || v === undefined));
+        const allNull = fields.every(f => (block[f] || []).every(v => v === null || v === undefined));
         if (allNull) throw new Error('Archive data lags ~5 days and this range has no values yet. Pick an end date at least 5 days ago.');
 
-        // destroy old charts before re-render
         viewCharts.forEach(c => c.destroy());
         viewCharts = [];
 
         let h = `<div class="loc-header">${esc(loc.name)}, ${esc(loc.country_code || '')}</div>`;
         h += `<div class="loc-sub">${d.latitude}, ${d.longitude} · elevation ${esc(d.elevation)} m · ${esc(d.timezone || '')}</div>`;
+        if (notice) h += `<div class="info-box">ℹ️ ${esc(notice)}</div>`;
 
-        // split into 7-day weeks
-        const weeks = [];
-        for (let i = 0; i < times.length; i += 7) weeks.push([i, Math.min(i + 7, times.length)]);
-
-        weeks.forEach(([a, b], wi) => {
-          h += `<div class="week-block">`;
-          h += `<div class="week-head">Week ${wi + 1}: ${esc(times[a])} → ${esc(times[b - 1])}</div>`;
-          h += `<div class="chart-wrap"><canvas id="wchart-${wi}"></canvas></div>`;
-          h += '<div class="table-wrap"><table><tr><th>Date</th>';
-          fields.forEach(f => { h += `<th>${esc(fieldLabel(f))}</th>`; });
-          h += '</tr>';
-          for (let i = a; i < b; i++) {
-            h += `<tr><td>${esc(times[i])}</td>`;
-            fields.forEach(f => {
-              const v = (daily[f] || [])[i];
-              h += `<td>${v === null || v === undefined ? '—' : esc(v)}</td>`;
-            });
-            h += '</tr>';
-          }
-          h += '</table></div></div>';
-        });
-        out.innerHTML = h;
-
-        // charts after DOM insert
-        weeks.forEach(([a, b], wi) => {
-          const ctx = document.getElementById('wchart-' + wi);
-          if (!ctx || typeof Chart === 'undefined') return;
-          const datasets = fields.map(f => {
-            const st = CHART_STYLE[f] || { type: 'line', color: '#94a3b8', axis: 'yMain' };
-            return {
-              type: st.type,
-              label: fieldLabel(f),
-              data: (daily[f] || []).slice(a, b),
-              borderColor: st.color,
-              backgroundColor: st.color,
-              yAxisID: st.axis,
-              tension: 0.3,
-              pointRadius: 2
-            };
+        if (usedRes === 'daily') {
+          // weekly blocks
+          const weeks = [];
+          for (let i = 0; i < times.length; i += 7) weeks.push([i, Math.min(i + 7, times.length)]);
+          weeks.forEach(([a, b], wi) => {
+            h += `<div class="week-block">`;
+            h += `<div class="week-head">Week ${wi + 1}: ${esc(times[a])} → ${esc(times[b - 1])}</div>`;
+            h += `<div class="chart-wrap"><canvas id="wchart-${wi}"></canvas></div>`;
+            h += blockTable(times, fields, block, a, b, t => t);
+            h += '</div>';
           });
-          const needMm = datasets.some(ds => ds.yAxisID === 'yMm');
-          const scales = {
-            x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0' } },
-            yMain: { position: 'left', grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0' } }
-          };
-          if (needMm) {
-            scales.yMm = { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#a0aec0' }, beginAtZero: true, title: { display: true, text: 'mm', color: '#a0aec0' } };
-          }
-          viewCharts.push(new Chart(ctx, {
-            data: { labels: (daily.time || []).slice(a, b), datasets },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              interaction: { mode: 'index', intersect: false },
-              plugins: { legend: { labels: { color: '#e0e0e0' } } },
-              scales
-            }
-          }));
-        });
+          out.innerHTML = h;
+          weeks.forEach(([a, b], wi) => {
+            const sub = {};
+            fields.forEach(f => { sub[f] = (block[f] || []).slice(a, b); });
+            drawBlockChart('wchart-' + wi, times.slice(a, b), fields, sub);
+          });
+        } else {
+          // single block for hourly / 15-min, time shown as "MM-DD HH:MM"
+          const label = usedRes === '15min' ? '15-min' : 'Hourly';
+          const fmtT = t => t.replace('T', ' ').slice(5);
+          h += `<div class="week-block">`;
+          h += `<div class="week-head">${label} view: ${esc(from)} → ${esc(to)} (${times.length} points)</div>`;
+          h += `<div class="chart-wrap"><canvas id="wchart-0"></canvas></div>`;
+          h += blockTable(times, fields, block, 0, times.length, fmtT);
+          h += '</div>';
+          out.innerHTML = h;
+          drawBlockChart('wchart-0', times.map(fmtT), fields, block);
+        }
       } catch (err) {
         out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
       } finally {
         btn.disabled = false;
       }
-    }
-
-    function fieldLabel(f) {
-      for (const k in FIELDS) {
-        if (FIELDS[k].labels[f]) return FIELDS[k].labels[f];
-      }
-      return f;
     }
 
     // ---------- DATA DOWNLOADER ----------
@@ -697,28 +1008,25 @@
       const out = document.getElementById('dlResult');
 
       if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
-      if (!validDates(from, to, out)) return;
       const keys = checkedKeys('dlPills');
       if (!keys.length) { out.innerHTML = '<div class="error-box">Select at least one field.</div>'; return; }
       const res = document.querySelector('#dlRes input:checked').value;
 
-      // 15-min data only exists for roughly the last 3 months (+ short forecast)
       let useKeys = keys;
+      let minD = MIN_DATE, maxD = TODAY;
       if (res === '15min') {
-        const fmt = (d) => d.toISOString().slice(0, 10);
-        const minDate = fmt(new Date(Date.now() - 92 * 86400000));
-        const maxDate = fmt(new Date(Date.now() + 16 * 86400000));
-        if (from < minDate || to > maxDate) {
-          out.innerHTML = `<div class="error-box">10/15-min data is only available for roughly the last 3 months (from ${minDate} to ${maxDate}). For older dates use Daily or Hourly.</div>`;
+        minD = new Date(Date.now() - 92 * 86400000).toISOString().slice(0, 10);
+        if (from < minD || to > maxD) {
+          out.innerHTML = `<div class="error-box">15-min data is only available for roughly the last 3 months (from ${minD} to ${maxD}). For older dates use Daily or Hourly.</div>`;
           return;
         }
-        // minutely_15 supports fewer variables — drop unsupported ones
-        useKeys = keys.filter(k => k !== 'pressure' && k !== 'cloud');
+        useKeys = keys.filter(k => FIELDS[k].minutely);
         if (!useKeys.length) {
-          out.innerHTML = '<div class="error-box">Pressure and cloud cover are not available at 15-min resolution. Pick another field.</div>';
+          out.innerHTML = '<div class="error-box">The selected fields are not available at 15-min resolution. Pick another field.</div>';
           return;
         }
       }
+      if (!validDates(from, to, out, minD, maxD)) return;
 
       const mode = res === 'daily' ? 'daily' : 'hourly';
       const fields = useKeys.flatMap(k => FIELDS[k][mode]);
@@ -731,14 +1039,13 @@
         const loc = await geocode(city);
         const d = await postJSON(endpoint, {
           latitude: loc.latitude, longitude: loc.longitude,
-          start_date: from, end_date: to, fields
+          start_date: from, end_date: to, fields, units: unitsBody()
         });
         const blockKey = res === 'daily' ? 'daily' : res === '15min' ? 'minutely_15' : 'hourly';
         const block = d[blockKey] || {};
         let times = block.time || [];
         if (!times.length) throw new Error('No data returned for this range.');
 
-        // 3-hourly = hourly data, keep every 3rd row
         let idxs = times.map((_, i) => i);
         if (res === '3h') idxs = idxs.filter(i => i % 3 === 0);
 
