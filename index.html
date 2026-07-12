@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Weather — Forecast, History & Data Downloader</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+      background: #0a0e27;
+      color: #e0e0e0;
+      overflow-x: hidden;
+    }
+    /* colorful radial gradient BEHIND the glass so blur is visible */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 25% 20%, rgba(59, 130, 246, 0.18) 0%, transparent 50%),
+                  radial-gradient(ellipse at 75% 60%, rgba(139, 92, 246, 0.14) 0%, transparent 50%),
+                  radial-gradient(ellipse at 50% 100%, rgba(14, 165, 233, 0.10) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    .container { max-width: 1040px; margin: 0 auto; padding: 20px; }
+
+    /* HERO */
+    .hero { text-align: center; padding: 48px 20px 34px; }
+    .hero h1 {
+      font-size: 2.8rem;
+      background: linear-gradient(135deg, #3b82f6, #0ea5e9, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 800;
+      margin-bottom: 8px;
+      letter-spacing: -1px;
+    }
+    .hero p { color: #a0aec0; font-size: 1rem; }
+
+    /* GLASS PANEL — 18px desktop / 11px mobile */
+    .glass {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 18px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+
+    /* BENTO GRID */
+    .bento-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 22px;
+      margin-bottom: 40px;
+    }
+    .bento-card {
+      padding: 28px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+    }
+    .bento-card::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 4px;
+      background: linear-gradient(90deg, var(--a1), var(--a2));
+    }
+    .bento-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(255, 255, 255, 0.22);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+    .bento-card.blue   { --a1: #3b82f6; --a2: #0ea5e9; }
+    .bento-card.purple { --a1: #8b5cf6; --a2: #d946ef; }
+    .bento-card.green  { --a1: #22c55e; --a2: #10b981; }
+    .bento-icon { font-size: 2.2rem; margin-bottom: 12px; }
+    .bento-card h3 { font-size: 1.25rem; color: #fff; font-weight: 700; margin-bottom: 6px; }
+    .bento-card p { font-size: 0.92rem; color: #a0aec0; line-height: 1.5; margin-bottom: 18px; }
+    .card-btn {
+      padding: 12px 24px;
+      min-height: 44px;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.95rem;
+      background: linear-gradient(135deg, var(--a1), var(--a2));
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .card-btn:hover { transform: scale(1.03); }
+
+    /* MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.open { display: flex; animation: fadeIn 0.3s ease-out; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    .modal-content {
+      background: rgba(20, 25, 40, 0.95);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 680px;
+      width: 92%;
+      max-height: 88vh;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5);
+      animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    @keyframes slideUp {
+      from { transform: translateY(20px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    .modal-close {
+      position: absolute;
+      top: 16px; right: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: #fff;
+      font-size: 1.6rem;
+      cursor: pointer;
+      width: 44px; height: 44px;
+      border-radius: 10px;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1;
+      z-index: 2;
+    }
+    .modal-close:hover { background: rgba(255, 255, 255, 0.2); }
+    .modal h2 {
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--a1, #3b82f6), var(--a2, #0ea5e9));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      padding-right: 54px;
+    }
+
+    /* FORMS */
+    .form-row { display: flex; gap: 14px; flex-wrap: wrap; }
+    .form-group { flex: 1; min-width: 150px; margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 7px; font-size: 0.88rem; color: #cbd5e1; font-weight: 500; }
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      min-height: 44px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      color: #fff;
+      font-size: 1rem;
+      color-scheme: dark;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .form-group input:focus {
+      outline: none;
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(59, 130, 246, 0.6);
+    }
+
+    /* PILL TOGGLES (checkboxes + radios rendered as chips) */
+    .pill-set { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 16px;
+      min-height: 44px;
+      border-radius: 22px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.05);
+      color: #8b93a7;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      user-select: none;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .pill input { display: none; }
+    .pill.on {
+      color: #fff;
+      border-color: var(--pc, #3b82f6);
+      background: color-mix(in srgb, var(--pc, #3b82f6) 22%, transparent);
+      box-shadow: 0 0 14px color-mix(in srgb, var(--pc, #3b82f6) 45%, transparent);
+    }
+    .pill-label { font-size: 0.88rem; color: #cbd5e1; font-weight: 500; margin-bottom: 8px; }
+
+    .btn {
+      padding: 13px 26px;
+      min-height: 44px;
+      border: none;
+      border-radius: 10px;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      font-size: 1rem;
+    }
+    .btn:hover { transform: scale(1.02); }
+    .btn:disabled { opacity: 0.6; cursor: wait; transform: none; }
+    .btn-blue   { background: linear-gradient(135deg, #3b82f6, #0ea5e9); width: 100%; }
+    .btn-purple { background: linear-gradient(135deg, #8b5cf6, #d946ef); width: 100%; }
+    .btn-green  { background: linear-gradient(135deg, #22c55e, #10b981); }
+    .btn-gray   { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
+
+    .spinner {
+      border: 3px solid rgba(59, 130, 246, 0.2);
+      border-top: 3px solid #3b82f6;
+      border-radius: 50%;
+      width: 34px; height: 34px;
+      animation: spin 1s linear infinite;
+      margin: 22px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error-box {
+      background: rgba(239, 68, 68, 0.2);
+      border: 1px solid #ef4444;
+      border-radius: 10px;
+      padding: 13px;
+      color: #fca5a5;
+      margin-top: 16px;
+    }
+    .ok-box {
+      background: rgba(34, 197, 94, 0.15);
+      border: 1px solid rgba(34, 197, 94, 0.5);
+      border-radius: 10px;
+      padding: 13px;
+      color: #86efac;
+      margin-top: 16px;
+      word-break: break-all;
+    }
+    .loc-header { font-size: 1.05rem; color: #93c5fd; margin: 18px 0 4px; font-weight: 600; }
+    .loc-sub { font-size: 0.85rem; color: #94a3b8; margin-bottom: 14px; }
+
+    /* forecast current conditions */
+    .current-grid { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 14px; }
+    .current-item { text-align: center; min-width: 84px; }
+    .current-item .val { font-size: 1.5rem; font-weight: 700; color: #fff; }
+    .current-item .lbl { font-size: 0.78rem; color: #94a3b8; }
+
+    /* weekly block */
+    .week-block {
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      padding: 16px;
+      margin-top: 18px;
+    }
+    .week-head { font-size: 0.98rem; font-weight: 700; color: #d8b4fe; margin-bottom: 10px; }
+    .chart-wrap { position: relative; max-height: 340px; }
+    .chart-wrap canvas { max-height: 340px; }
+
+    /* table */
+    .table-wrap { overflow-x: auto; margin-top: 12px; border-radius: 10px; }
+    table { border-collapse: collapse; width: 100%; min-width: 460px; font-size: 0.85rem; }
+    th {
+      background: rgba(139, 92, 246, 0.15);
+      color: #d8b4fe;
+      font-weight: 600;
+    }
+    th, td { text-align: right; padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; }
+    tr:hover td { background: rgba(255,255,255,0.03); }
+
+    .dl-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 18px; }
+
+    .footer {
+      text-align: center;
+      padding: 36px 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 0.85rem;
+      color: #64748b;
+    }
+
+    /* MOBILE — 1 column, blur 11px, full-width stacked controls */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 2rem; }
+      .glass, .modal-content {
+        backdrop-filter: blur(11px);
+        -webkit-backdrop-filter: blur(11px);
+      }
+      .bento-grid { grid-template-columns: 1fr; }
+      .modal-content { width: 95%; padding: 20px; }
+      .form-row { flex-direction: column; }
+      .form-group { min-width: 100%; }
+      .chart-wrap, .chart-wrap canvas { max-height: 320px; }
+      .dl-row { flex-direction: column; }
+      .dl-row .btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- HERO -->
+    <div class="hero">
+      <h1>⛅ Weather</h1>
+      <p>Live forecast, 85 years of history, and bulk data export. Open-Meteo, keyless.</p>
+    </div>
+
+    <!-- BENTO GRID -->
+    <div class="bento-grid">
+      <div class="bento-card glass blue" onclick="openModal('forecastModal')">
+        <div class="bento-icon">🌡️</div>
+        <h3>Current Weather</h3>
+        <p>Live conditions for any city — temperature, humidity, wind, precipitation.</p>
+        <button class="card-btn">Open</button>
+      </div>
+      <div class="bento-card glass purple" onclick="openModal('viewModal')">
+        <div class="bento-icon">📅</div>
+        <h3>Historical View</h3>
+        <p>Daily weather back to 1940 — weekly charts &amp; tables, pick exactly the fields you want. Max 5 weeks.</p>
+        <button class="card-btn">Open</button>
+      </div>
+      <div class="bento-card glass green" onclick="openModal('dlModal')">
+        <div class="bento-icon">💾</div>
+        <h3>Data Downloader</h3>
+        <p>Bulk export — daily, hourly, 3-hourly or 15-min resolution → XLSX, CSV or JSON. No on-screen render.</p>
+        <button class="card-btn">Open</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: FORECAST -->
+  <div class="modal" id="forecastModal" style="--a1:#3b82f6; --a2:#0ea5e9">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('forecastModal')">×</button>
+      <h2>🌡️ Current Weather</h2>
+      <div class="form-group">
+        <label for="fcCity">City</label>
+        <input type="text" id="fcCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runForecast()">
+      </div>
+      <button class="btn btn-blue" id="fcBtn" onclick="runForecast()">Get Forecast</button>
+      <div id="fcResult"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: HISTORICAL VIEW -->
+  <div class="modal" id="viewModal" style="--a1:#8b5cf6; --a2:#d946ef">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('viewModal')">×</button>
+      <h2>📅 Historical View (1940–today)</h2>
+      <div class="form-group">
+        <label for="hvCity">City</label>
+        <input type="text" id="hvCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runView()">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="hvFrom">From</label>
+          <input type="date" id="hvFrom" value="1966-05-05" min="1940-01-01">
+        </div>
+        <div class="form-group">
+          <label for="hvTo">To</label>
+          <input type="date" id="hvTo" value="1966-06-05" min="1940-01-01">
+        </div>
+      </div>
+      <div class="pill-label">Fields to display</div>
+      <div class="pill-set" id="hvPills">
+        <label class="pill on" style="--pc:#ef4444"><input type="checkbox" data-key="temp" checked>🌡️ Temperature</label>
+        <label class="pill on" style="--pc:#22c55e"><input type="checkbox" data-key="humidity" checked>💧 Humidity</label>
+        <label class="pill on" style="--pc:#06b6d4"><input type="checkbox" data-key="precip" checked>🌧️ Precipitation</label>
+        <label class="pill on" style="--pc:#8b5cf6"><input type="checkbox" data-key="rainsnow" checked>🌨️ Rain/Snow</label>
+        <label class="pill on" style="--pc:#f59e0b"><input type="checkbox" data-key="wind" checked>💨 Wind speed</label>
+      </div>
+      <button class="btn btn-purple" id="hvBtn" onclick="runView()">Get History</button>
+      <div id="hvResult"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: DATA DOWNLOADER -->
+  <div class="modal" id="dlModal" style="--a1:#22c55e; --a2:#10b981">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('dlModal')">×</button>
+      <h2>💾 Data Downloader</h2>
+      <div class="form-group">
+        <label for="dlCity">City</label>
+        <input type="text" id="dlCity" placeholder="e.g. Oradea">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="dlFrom">From</label>
+          <input type="date" id="dlFrom" value="1985-01-01" min="1940-01-01">
+        </div>
+        <div class="form-group">
+          <label for="dlTo">To</label>
+          <input type="date" id="dlTo" value="1985-12-31" min="1940-01-01">
+        </div>
+      </div>
+      <div class="pill-label">Resolution</div>
+      <div class="pill-set" id="dlRes">
+        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="daily">📆 Daily</label>
+        <label class="pill on" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="1h" checked>🕐 1 hour</label>
+        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="3h">🕒 3 hours</label>
+        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="15min">⏱️ 10/15 min</label>
+      </div>
+      <div class="pill-label">Fields</div>
+      <div class="pill-set" id="dlPills">
+        <label class="pill on" style="--pc:#ef4444"><input type="checkbox" data-key="temp" checked>🌡️ Temperature</label>
+        <label class="pill" style="--pc:#22c55e"><input type="checkbox" data-key="humidity">💧 Humidity</label>
+        <label class="pill" style="--pc:#06b6d4"><input type="checkbox" data-key="precip">🌧️ Precipitation</label>
+        <label class="pill" style="--pc:#8b5cf6"><input type="checkbox" data-key="rainsnow">🌨️ Rain/Snow</label>
+        <label class="pill" style="--pc:#f59e0b"><input type="checkbox" data-key="wind">💨 Wind speed</label>
+        <label class="pill" style="--pc:#64748b"><input type="checkbox" data-key="pressure">🧭 Pressure</label>
+        <label class="pill" style="--pc:#a3a3a3"><input type="checkbox" data-key="cloud">☁️ Cloud cover</label>
+        <label class="pill" style="--pc:#f97316"><input type="checkbox" data-key="winddir">🧭 Wind direction</label>
+      </div>
+      <div class="dl-row">
+        <button class="btn btn-green" onclick="runDownload('xlsx')">📥 Download XLSX</button>
+        <button class="btn btn-gray" onclick="runDownload('csv')">📄 Download CSV</button>
+        <button class="btn btn-blue" style="width:auto" onclick="runDownload('json')">🧾 Download JSON</button>
+      </div>
+      <div id="dlResult"></div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Data: Open-Meteo (forecast, geocoding, archive) — open, keyless APIs. Not professional weather advice.
+  </div>
+
+  <script>
+    'use strict';
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s == null ? '' : s;
+      return d.innerHTML;
+    }
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+    // ---------- modal plumbing: listeners attached ONCE ----------
+    function openModal(id) {
+      document.getElementById(id).classList.add('open');
+    }
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+    document.addEventListener('click', (e) => {
+      if (e.target.classList && e.target.classList.contains('modal')) {
+        e.target.classList.remove('open');
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
+      }
+    });
+    // pill toggle visual state (delegated, attached once)
+    document.addEventListener('change', (e) => {
+      const input = e.target;
+      if (!input.matches('.pill input')) return;
+      if (input.type === 'radio') {
+        document.querySelectorAll(`input[name="${input.name}"]`).forEach(r => {
+          r.closest('.pill').classList.toggle('on', r.checked);
+        });
+      } else {
+        input.closest('.pill').classList.toggle('on', input.checked);
+      }
+    });
+
+    // ---------- shared fetch ----------
+    async function postJSON(path, body) {
+      const res = await fetch(path, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); }
+      catch { throw new Error(text.slice(0, 200) || ('HTTP ' + res.status)); }
+      if (!res.ok) throw new Error(text.slice(0, 200) || ('HTTP ' + res.status));
+      return data;
+    }
+
+    async function geocode(city) {
+      const d = await postJSON('/api/geocoding', { query: city });
+      const list = (d.results && d.results.results) || [];
+      if (!list.length) throw new Error('City not found: ' + city);
+      return list[0];
+    }
+
+    // ---------- FORECAST ----------
+    async function runForecast() {
+      const city = document.getElementById('fcCity').value.trim();
+      const out = document.getElementById('fcResult');
+      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+      out.innerHTML = '<div class="spinner"></div>';
+      const btn = document.getElementById('fcBtn');
+      btn.disabled = true;
+      try {
+        const loc = await geocode(city);
+        const d = await postJSON('/api/forecast', { latitude: loc.latitude, longitude: loc.longitude });
+        const r = d.results || {};
+        const cur = r.current || {};
+        const units = r.current_units || {};
+        let h = `<div class="loc-header">${esc(loc.name)}, ${esc(loc.country_code || '')}</div>`;
+        h += `<div class="loc-sub">${loc.latitude}, ${loc.longitude} · elevation ${esc(r.elevation)} m · ${esc(r.timezone || '')}</div>`;
+        h += '<div class="current-grid">';
+        [['temperature_2m','🌡️ Temp'],['apparent_temperature','🤔 Feels'],['relative_humidity_2m','💧 Humidity'],['wind_speed_10m','💨 Wind'],['precipitation','🌧️ Precip']]
+          .forEach(([k, lbl]) => {
+            if (cur[k] !== undefined) {
+              h += `<div class="current-item"><div class="val">${esc(cur[k])}${esc(units[k] || '')}</div><div class="lbl">${lbl}</div></div>`;
+            }
+          });
+        h += '</div>';
+        out.innerHTML = h;
+      } catch (err) {
+        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ---------- field maps ----------
+    // key -> {daily:[...], hourly:[...], label, cols:{field:short header}}
+    const FIELDS = {
+      temp:     { daily: ['temperature_2m_max', 'temperature_2m_min'], hourly: ['temperature_2m'],
+                  labels: { temperature_2m_max: 'Max °C', temperature_2m_min: 'Min °C', temperature_2m: 'Temp °C' } },
+      humidity: { daily: ['relative_humidity_2m_max'], hourly: ['relative_humidity_2m'],
+                  labels: { relative_humidity_2m_max: 'Humidity %', relative_humidity_2m: 'Humidity %' } },
+      precip:   { daily: ['precipitation_sum'], hourly: ['precipitation'],
+                  labels: { precipitation_sum: 'Precip mm', precipitation: 'Precip mm' } },
+      rainsnow: { daily: ['rain_sum', 'snowfall_sum'], hourly: ['rain', 'snowfall'],
+                  labels: { rain_sum: 'Rain mm', snowfall_sum: 'Snow cm', rain: 'Rain mm', snowfall: 'Snow cm' } },
+      wind:     { daily: ['wind_speed_10m_max'], hourly: ['wind_speed_10m'],
+                  labels: { wind_speed_10m_max: 'Wind km/h', wind_speed_10m: 'Wind km/h' } },
+      pressure: { daily: ['surface_pressure_mean'], hourly: ['surface_pressure'],
+                  labels: { surface_pressure_mean: 'Pressure hPa', surface_pressure: 'Pressure hPa' } },
+      cloud:    { daily: ['cloud_cover_mean'], hourly: ['cloud_cover'],
+                  labels: { cloud_cover_mean: 'Cloud %', cloud_cover: 'Cloud %' } },
+      winddir:  { daily: ['wind_direction_10m_dominant'], hourly: ['wind_direction_10m'],
+                  labels: { wind_direction_10m_dominant: 'Wind dir °', wind_direction_10m: 'Wind dir °' } }
+    };
+    // chart styling per field name
+    const CHART_STYLE = {
+      temperature_2m_max: { type: 'line', color: '#ef4444', axis: 'yMain' },
+      temperature_2m_min: { type: 'line', color: '#3b82f6', axis: 'yMain' },
+      relative_humidity_2m_max: { type: 'line', color: '#22c55e', axis: 'yMain' },
+      precipitation_sum: { type: 'bar', color: 'rgba(6,182,212,0.5)', axis: 'yMm' },
+      rain_sum: { type: 'bar', color: 'rgba(139,92,246,0.5)', axis: 'yMm' },
+      snowfall_sum: { type: 'bar', color: 'rgba(226,232,240,0.5)', axis: 'yMm' },
+      wind_speed_10m_max: { type: 'line', color: '#f59e0b', axis: 'yMain' }
+    };
+
+    function checkedKeys(setId) {
+      return Array.from(document.querySelectorAll(`#${setId} input:checked`)).map(i => i.dataset.key);
+    }
+    function validDates(from, to, out) {
+      if (!DATE_RE.test(from) || !DATE_RE.test(to)) { out.innerHTML = '<div class="error-box">Dates must be YYYY-MM-DD.</div>'; return false; }
+      if (to < from) { out.innerHTML = '<div class="error-box">"To" must be on or after "From".</div>'; return false; }
+      return true;
+    }
+
+    // ---------- HISTORICAL VIEW ----------
+    let viewCharts = [];
+
+    async function runView() {
+      const city = document.getElementById('hvCity').value.trim();
+      const from = document.getElementById('hvFrom').value;
+      const to = document.getElementById('hvTo').value;
+      const out = document.getElementById('hvResult');
+
+      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+      if (!validDates(from, to, out)) return;
+      const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
+      if (days > 35) { out.innerHTML = `<div class="error-box">Your range is ${days.toLocaleString()} days — max 5 weeks (35 days) for display. Check the From date, or use the Data Downloader for longer ranges.</div>`; return; }
+      const keys = checkedKeys('hvPills');
+      if (!keys.length) { out.innerHTML = '<div class="error-box">Select at least one field.</div>'; return; }
+
+      const fields = keys.flatMap(k => FIELDS[k].daily);
+
+      out.innerHTML = '<div class="spinner"></div>';
+      const btn = document.getElementById('hvBtn');
+      btn.disabled = true;
+      try {
+        const loc = await geocode(city);
+        const d = await postJSON('/api/history-daily', {
+          latitude: loc.latitude, longitude: loc.longitude,
+          start_date: from, end_date: to, fields
+        });
+        const daily = d.daily || {};
+        const times = daily.time || [];
+        if (!times.length) throw new Error('No archive data for this range. Archive data lags ~5 days — pick an end date at least 5 days ago.');
+        // archive lags ~5 days: recent dates can come back as all-null rows
+        const allNull = fields.every(f => (daily[f] || []).every(v => v === null || v === undefined));
+        if (allNull) throw new Error('Archive data lags ~5 days and this range has no values yet. Pick an end date at least 5 days ago.');
+
+        // destroy old charts before re-render
+        viewCharts.forEach(c => c.destroy());
+        viewCharts = [];
+
+        let h = `<div class="loc-header">${esc(loc.name)}, ${esc(loc.country_code || '')}</div>`;
+        h += `<div class="loc-sub">${d.latitude}, ${d.longitude} · elevation ${esc(d.elevation)} m · ${esc(d.timezone || '')}</div>`;
+
+        // split into 7-day weeks
+        const weeks = [];
+        for (let i = 0; i < times.length; i += 7) weeks.push([i, Math.min(i + 7, times.length)]);
+
+        weeks.forEach(([a, b], wi) => {
+          h += `<div class="week-block">`;
+          h += `<div class="week-head">Week ${wi + 1}: ${esc(times[a])} → ${esc(times[b - 1])}</div>`;
+          h += `<div class="chart-wrap"><canvas id="wchart-${wi}"></canvas></div>`;
+          h += '<div class="table-wrap"><table><tr><th>Date</th>';
+          fields.forEach(f => { h += `<th>${esc(fieldLabel(f))}</th>`; });
+          h += '</tr>';
+          for (let i = a; i < b; i++) {
+            h += `<tr><td>${esc(times[i])}</td>`;
+            fields.forEach(f => {
+              const v = (daily[f] || [])[i];
+              h += `<td>${v === null || v === undefined ? '—' : esc(v)}</td>`;
+            });
+            h += '</tr>';
+          }
+          h += '</table></div></div>';
+        });
+        out.innerHTML = h;
+
+        // charts after DOM insert
+        weeks.forEach(([a, b], wi) => {
+          const ctx = document.getElementById('wchart-' + wi);
+          if (!ctx || typeof Chart === 'undefined') return;
+          const datasets = fields.map(f => {
+            const st = CHART_STYLE[f] || { type: 'line', color: '#94a3b8', axis: 'yMain' };
+            return {
+              type: st.type,
+              label: fieldLabel(f),
+              data: (daily[f] || []).slice(a, b),
+              borderColor: st.color,
+              backgroundColor: st.color,
+              yAxisID: st.axis,
+              tension: 0.3,
+              pointRadius: 2
+            };
+          });
+          const needMm = datasets.some(ds => ds.yAxisID === 'yMm');
+          const scales = {
+            x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0' } },
+            yMain: { position: 'left', grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0' } }
+          };
+          if (needMm) {
+            scales.yMm = { position: 'right', grid: { drawOnChartArea: false }, ticks: { color: '#a0aec0' }, beginAtZero: true, title: { display: true, text: 'mm', color: '#a0aec0' } };
+          }
+          viewCharts.push(new Chart(ctx, {
+            data: { labels: (daily.time || []).slice(a, b), datasets },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: { legend: { labels: { color: '#e0e0e0' } } },
+              scales
+            }
+          }));
+        });
+      } catch (err) {
+        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function fieldLabel(f) {
+      for (const k in FIELDS) {
+        if (FIELDS[k].labels[f]) return FIELDS[k].labels[f];
+      }
+      return f;
+    }
+
+    // ---------- DATA DOWNLOADER ----------
+    async function runDownload(format) {
+      const city = document.getElementById('dlCity').value.trim();
+      const from = document.getElementById('dlFrom').value;
+      const to = document.getElementById('dlTo').value;
+      const out = document.getElementById('dlResult');
+
+      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+      if (!validDates(from, to, out)) return;
+      const keys = checkedKeys('dlPills');
+      if (!keys.length) { out.innerHTML = '<div class="error-box">Select at least one field.</div>'; return; }
+      const res = document.querySelector('#dlRes input:checked').value;
+
+      // 15-min data only exists for roughly the last 3 months (+ short forecast)
+      let useKeys = keys;
+      if (res === '15min') {
+        const fmt = (d) => d.toISOString().slice(0, 10);
+        const minDate = fmt(new Date(Date.now() - 92 * 86400000));
+        const maxDate = fmt(new Date(Date.now() + 16 * 86400000));
+        if (from < minDate || to > maxDate) {
+          out.innerHTML = `<div class="error-box">10/15-min data is only available for roughly the last 3 months (from ${minDate} to ${maxDate}). For older dates use Daily or Hourly.</div>`;
+          return;
+        }
+        // minutely_15 supports fewer variables — drop unsupported ones
+        useKeys = keys.filter(k => k !== 'pressure' && k !== 'cloud');
+        if (!useKeys.length) {
+          out.innerHTML = '<div class="error-box">Pressure and cloud cover are not available at 15-min resolution. Pick another field.</div>';
+          return;
+        }
+      }
+
+      const mode = res === 'daily' ? 'daily' : 'hourly';
+      const fields = useKeys.flatMap(k => FIELDS[k][mode]);
+      const endpoint = res === 'daily' ? '/api/history-daily'
+                     : res === '15min' ? '/api/minutely'
+                     : '/api/history-hourly';
+
+      out.innerHTML = '<div class="spinner"></div><p style="text-align:center;color:#94a3b8;font-size:0.85rem">Fetching — large ranges can take a few seconds…</p>';
+      try {
+        const loc = await geocode(city);
+        const d = await postJSON(endpoint, {
+          latitude: loc.latitude, longitude: loc.longitude,
+          start_date: from, end_date: to, fields
+        });
+        const blockKey = res === 'daily' ? 'daily' : res === '15min' ? 'minutely_15' : 'hourly';
+        const block = d[blockKey] || {};
+        let times = block.time || [];
+        if (!times.length) throw new Error('No data returned for this range.');
+
+        // 3-hourly = hourly data, keep every 3rd row
+        let idxs = times.map((_, i) => i);
+        if (res === '3h') idxs = idxs.filter(i => i % 3 === 0);
+
+        const header = ['Time', ...fields.map(fieldLabel)];
+        const rows = idxs.map(i => [times[i], ...fields.map(f => {
+          const v = (block[f] || [])[i];
+          return v === undefined ? null : v;
+        })]);
+
+        const fname = `weather_${city.replace(/[^a-zA-Z0-9_-]+/g, '_')}_${from}_${to}_${res}`;
+        let blob;
+        if (format === 'xlsx') {
+          if (typeof XLSX === 'undefined') throw new Error('SheetJS failed to load.');
+          const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, 'Weather');
+          const ab = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+          blob = new Blob([ab], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        } else if (format === 'csv') {
+          const csv = [header, ...rows].map(r =>
+            r.map(v => {
+              const s = String(v === null || v === undefined ? '' : v);
+              return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+            }).join(',')
+          ).join('\r\n');
+          blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+        } else {
+          blob = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' });
+        }
+
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = fname + '.' + format;
+        a.click();
+        URL.revokeObjectURL(a.href);
+
+        const kb = Math.max(1, Math.round(blob.size / 1024));
+        out.innerHTML = `<div class="ok-box">✅ Downloaded: ${rows.length.toLocaleString()} rows, ${esc(fname + '.' + format)} (${kb.toLocaleString()} KB)</div>`;
+      } catch (err) {
+        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      }
+    }
+  </script>
+</body>
+</html>

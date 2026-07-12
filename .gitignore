@@ -1,0 +1,8 @@
+bin/*.exe
+bin/server.exe~
+bin/*.exe~
+go.sum
+*.swp
+*.swo
+.DS_Store
+*.tmp
