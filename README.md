@@ -8,11 +8,33 @@ Historical weather viewer + data downloader for Open-Meteo (daily/hourly/3-hour/
 - **Historical View**: 1940–today, max 5 weeks display, weekly charts + tables, exportable on the spot (including all charts as one PNG)
 - **Data Downloader**: Any date range (1940–today), multiple resolutions, XLSX/CSV/JSON/Markdown export
 - **Climate Anomaly**: Any year's monthly means against the 1991–2020 WMO normal, with a warm/cool chart
+- **Climate Trends**: Temperature or precipitation year by year over the last 10–80 years (or 1940→today), each year against the 1991–2020 normal, with a fitted trend line
+- **Keyless**: No API key anywhere — Open-Meteo is free and keyless for non-commercial use
 - **Date entry**: Explicit Year / Month / Day controls — no OS calendar on mobile, and the month can never be read as the day
 - **Quick ranges**: Last 30 days, this year, last year, 1940 → today
 - **Units**: European primary (°C, km/h, mm) with toggle to Fahrenheit/mph/inches
 - **Remembers**: City, units, resolution, field selection and dates persist across reloads
 - **Mobile-friendly**: Glass-panel UI, responsive design (tested on Huawei Mate 10 Pro)
+
+### Reading the climate panels
+
+The archive is ERA5, a *reanalysis* — a weather model constrained by
+observations, not a station record. Two consequences are surfaced in the UI
+rather than buried:
+
+- **1979 is a real boundary.** ERA5 first assimilated TOVS satellite soundings
+  at the end of 1978; the observing system went from ~17,000 observations a day
+  in 1940 to ~570,000 by 1978 and ~25 million by 2022. Part of any step across
+  that line is the instruments, not the climate. Climate Trends draws it on the
+  chart and marks earlier years with an asterisk.
+- **Precipitation is the weaker variable.** Temperature is among ERA5's most
+  reliable fields; precipitation is among its least, and ECMWF advises caution
+  using ERA5 for long-term trends. Post-1979 precipitation trends are the ones
+  worth leaning on.
+
+Incomplete years — the current one, and 1940 where the archive starts mid-record
+— are excluded from trends and baselines, so a part-year cannot pose as a dry or
+cool one.
 
 ### Markdown export
 

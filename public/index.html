@@ -55,12 +55,14 @@
     }
 
     /* BENTO GRID — wide gaps so the per-card glow can breathe */
+    /* Two even columns so the rows stay symmetric; the last card spans both. */
     .bento-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 22px;
       margin-bottom: 44px;
     }
+    .bento-card.wide { grid-column: 1 / -1; }
     @media (min-width: 769px) {
       .bento-grid { gap: 50px; }
     }
@@ -107,6 +109,25 @@
       box-shadow: 0 0 30px 2px rgba(245,158,11,.25), 0 18px 50px -18px rgba(0,0,0,.75);
     }
     .bento-card.amber:hover { box-shadow: 0 0 40px 4px rgba(245,158,11,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
+    .bento-card.teal {
+      --a1: #14b8a6; --a2: #06b6d4;
+      box-shadow: 0 0 30px 2px rgba(20,184,166,.25), 0 18px 50px -18px rgba(0,0,0,.75);
+    }
+    .bento-card.teal:hover { box-shadow: 0 0 40px 4px rgba(20,184,166,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
+
+    /* keyless-API notice, above the panels */
+    .api-note {
+      padding: 16px 20px;
+      margin-bottom: 26px;
+      font-size: 0.92rem;
+      color: #cbd5e1;
+      line-height: 1.55;
+    }
+    .api-note strong { color: #86efac; }
+    a { color: #7dd3fc; }
+    a:hover { color: #bae6fd; }
+    .src-list { margin: 10px 0 0; padding-left: 20px; line-height: 1.75; text-align: left; }
+    .src-list li { margin-bottom: 2px; }
     .bento-icon { font-size: 2.2rem; margin-bottom: 12px; }
     .bento-card h3 { font-size: 1.25rem; color: #fff; font-weight: 700; margin-bottom: 6px; }
     .bento-card p { font-size: 0.92rem; color: #a0aec0; line-height: 1.5; margin-bottom: 18px; }
@@ -352,6 +373,7 @@
     .btn-green  { background: linear-gradient(135deg, #22c55e, #10b981); }
     .btn-gray   { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
     .btn-amber  { background: linear-gradient(135deg, #f59e0b, #ef4444); width: 100%; }
+    .btn-teal   { background: linear-gradient(135deg, #14b8a6, #06b6d4); width: 100%; }
 
     /* anomaly readout — warmer than baseline reads red, cooler reads blue */
     .anom-head { font-size: 1.6rem; font-weight: 800; margin: 16px 0 4px; }
@@ -360,6 +382,18 @@
     .anom-sub { color: #94a3b8; font-size: 0.9rem; margin-bottom: 12px; }
     td.warm { color: #f87171; font-weight: 600; }
     td.cool { color: #60a5fa; font-weight: 600; }
+    .anom-head.wet { color: #22d3ee; }
+    .anom-head.dry { color: #f59e0b; }
+    td.wet { color: #22d3ee; font-weight: 600; }
+    td.dry { color: #f59e0b; font-weight: 600; }
+    .data-note {
+      margin-top: 18px; padding: 14px 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      border-radius: 10px;
+      font-size: 0.83rem; color: #94a3b8; line-height: 1.6;
+    }
+    .data-note strong { color: #cbd5e1; }
 
     .spinner {
       border: 3px solid rgba(59, 130, 246, 0.2);
@@ -505,6 +539,17 @@
       <p>Live forecast, 85 years of history, and bulk data export. Open-Meteo, keyless.</p>
     </div>
 
+    <!-- KEYLESS-API NOTICE -->
+    <div class="api-note glass">
+      🔓 <strong>No API key needed — and none is shared.</strong>
+      Every panel reads from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>,
+      which is free and keyless for non-commercial use: no sign-up, no account, no personal key in this page.
+      The only ceiling is Open-Meteo's
+      <a href="https://open-meteo.com/en/pricing" target="_blank" rel="noopener">fair-use limit</a>
+      (about 10,000 requests a day). If you want your own quota, you can run this site yourself —
+      the source is on <a href="https://github.com/laci141/weather-web" target="_blank" rel="noopener">GitHub</a>.
+    </div>
+
     <!-- BENTO GRID -->
     <div class="bento-grid">
       <div class="bento-card glass blue" onclick="openModal('forecastModal')">
@@ -529,6 +574,12 @@
         <div class="bento-icon">🌡️</div>
         <h3>Climate Anomaly</h3>
         <p>How much warmer or cooler was a year than the 1991–2020 normal? Month by month, back to 1940.</p>
+        <button class="card-btn">Open</button>
+      </div>
+      <div class="bento-card glass teal wide" onclick="openModal('trendModal')">
+        <div class="bento-icon">📊</div>
+        <h3>Climate Trends</h3>
+        <p>Temperature or precipitation, year by year, over the last 10 to 80 years — each year against the 1991–2020 normal, with the trend line.</p>
         <button class="card-btn">Open</button>
       </div>
     </div>
@@ -670,8 +721,44 @@
     </div>
   </div>
 
+  <!-- MODAL: CLIMATE TRENDS -->
+  <div class="modal" id="trendModal" style="--a1:#14b8a6; --a2:#06b6d4">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('trendModal')">×</button>
+      <h2>📊 Climate Trends</h2>
+      <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
+        One bar per year, each measured against the 1991–2020 normal, with a fitted trend line.
+        Incomplete years are left out so a part-year cannot masquerade as a dry or cool one.
+      </p>
+      <div class="form-group">
+        <label for="trCity">City</label>
+        <input type="text" id="trCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runTrend()">
+      </div>
+      <div class="pill-label">Variable</div>
+      <div class="pill-set" id="trVar">
+        <label class="pill on" style="--pc:#ef4444"><input type="radio" name="trvar" value="temp" checked>🌡️ Temperature</label>
+        <label class="pill" style="--pc:#06b6d4"><input type="radio" name="trvar" value="precip">🌧️ Precipitation</label>
+      </div>
+      <div class="pill-label">Period</div>
+      <div class="pill-grid" id="trPeriod"></div>
+      <button class="btn btn-teal" id="trBtn" onclick="runTrend()">Show trend</button>
+      <div id="trResult"></div>
+    </div>
+  </div>
+
   <div class="footer">
-    Data: Open-Meteo (forecast, geocoding, archive) — open, keyless APIs. Not professional weather advice.
+    <p>Data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>
+    (forecast, geocoding, ERA5 archive) — open, keyless APIs. Not professional weather advice.</p>
+    <p style="margin-top:14px"><strong>Sources</strong></p>
+    <ul class="src-list">
+      <li><a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener">Open-Meteo Historical Weather API</a> — the archive behind every panel</li>
+      <li><a href="https://rmets.onlinelibrary.wiley.com/doi/10.1002/qj.4803" target="_blank" rel="noopener">Soci et al. (2024), <em>The ERA5 global reanalysis from 1940 to 2022</em></a> — observation counts and the 1979 transition</li>
+      <li><a href="https://confluence.ecmwf.int/spaces/CKB/pages/76414402/ERA5+data+documentation" target="_blank" rel="noopener">ECMWF — ERA5 data documentation</a> — the warning about long-term trends</li>
+      <li><a href="https://rmets.onlinelibrary.wiley.com/doi/10.1002/qj.4174" target="_blank" rel="noopener">Bell et al. (2021), <em>ERA5: preliminary extension to 1950</em></a> — the back extension and its known issues</li>
+      <li><a href="https://www.sciencedirect.com/science/article/pii/S1470160X24009385" target="_blank" rel="noopener">Global-scale ERA5 precipitation and temperature evaluation (2024)</a> — why precipitation is the weaker variable</li>
+      <li><a href="https://www.sciencedirect.com/science/article/pii/S0169809523000030" target="_blank" rel="noopener">ERA5 / ERA5-Land precipitation over Spain, 1951–2020 (2023)</a> — long-record European evaluation</li>
+      <li><a href="https://climatedataguide.ucar.edu/climate-data/era5-atmospheric-reanalysis" target="_blank" rel="noopener">NCAR Climate Data Guide — ERA5</a> — general strengths and limitations</li>
+    </ul>
   </div>
 
   <script>
@@ -1725,11 +1812,274 @@
       }
     }
 
+    // ---------- CLIMATE TRENDS ----------
+    // Year-by-year anomalies against the same 1991–2020 normal the Anomaly panel
+    // uses, over a chosen span. Temperature is a yearly mean, precipitation a
+    // yearly total — so precipitation also gets a percent-of-normal column,
+    // because 40 mm means one thing in a wet year and another in a dry one.
+    const TREND_PERIODS = [10, 20, 30, 40, 50, 60, 80];
+    // ERA5 first assimilated TOVS satellite soundings at the end of 1978. Before
+    // that the record rests on far fewer observations (≈17k/day in 1940 against
+    // ≈570k/day by 1978), so part of any step across this line is the observing
+    // system rather than the weather. The chart marks it.
+    const SATELLITE_ERA = 1979;
+    let trendChart = null;
+    let lastTrend = null;
+
+    function buildTrendPeriods() {
+      document.getElementById('trPeriod').innerHTML =
+        TREND_PERIODS.map(n =>
+          `<label class="pill${n === 30 ? ' on' : ''}" style="--pc:#14b8a6" data-pill="p${n}">` +
+          `<input type="radio" name="trper" value="${n}"${n === 30 ? ' checked' : ''}>Last ${n} years</label>`
+        ).join('') +
+        '<label class="pill" style="--pc:#14b8a6" data-pill="pmax">' +
+        '<input type="radio" name="trper" value="max">1940 → today</label>';
+    }
+    buildTrendPeriods();
+
+    function linFit(xs, ys) {
+      const n = xs.length;
+      const mx = xs.reduce((a, b) => a + b, 0) / n;
+      const my = ys.reduce((a, b) => a + b, 0) / n;
+      let num = 0, den = 0;
+      for (let i = 0; i < n; i++) {
+        num += (xs[i] - mx) * (ys[i] - my);
+        den += (xs[i] - mx) * (xs[i] - mx);
+      }
+      const slope = den === 0 ? 0 : num / den;
+      return { slope, intercept: my - slope * mx };
+    }
+
+    // Draws the 1979 boundary straight onto the canvas; Chart.js has no built-in
+    // annotation without its plugin bundle.
+    const satelliteMarker = {
+      id: 'satelliteMarker',
+      afterDatasetsDraw(chart) {
+        const idx = chart.data.labels.indexOf(String(SATELLITE_ERA));
+        if (idx < 0) return;
+        const x = chart.scales.x.getPixelForValue(idx);
+        const { top, bottom } = chart.chartArea;
+        const c = chart.ctx;
+        c.save();
+        c.strokeStyle = 'rgba(226,232,240,0.55)';
+        c.setLineDash([5, 4]);
+        c.lineWidth = 1.5;
+        c.beginPath();
+        c.moveTo(x, top);
+        c.lineTo(x, bottom);
+        c.stroke();
+        c.setLineDash([]);
+        c.fillStyle = '#cbd5e1';
+        c.font = '11px sans-serif';
+        c.fillText('satellite era →', x + 6, top + 13);
+        c.restore();
+      }
+    };
+
+    const TREND_NOTE =
+      '<div class="data-note"><strong>Data note.</strong> These values come from ERA5, a <em>reanalysis</em> — ' +
+      'a weather model constrained by observations, not a rain-gauge record. The observing system grew from ' +
+      'about 17,000 observations a day in 1940 to some 25 million by 2022, and satellite sounding began at the ' +
+      'end of 1978, so part of any change across that line reflects the instruments rather than the climate. ' +
+      'Temperature is among ERA5\'s most reliable variables; precipitation is among its least, and ECMWF advises ' +
+      'caution when using ERA5 for long-term trends. Trends beginning after 1979 stand on the firmest ground. ' +
+      'Sources are linked at the foot of the page.</div>';
+
+    function exportTrend(format) {
+      const msg = document.getElementById('trExportMsg');
+      if (!lastTrend || !msg) return;
+      const { city, loc, years, values, anoms, pcts, unit, isTemp, baseline, startYear, skipped } = lastTrend;
+      const header = ['Year', `${isTemp ? 'Annual mean' : 'Annual total'} ${unit}`, `Anomaly ${unit}`]
+        .concat(isTemp ? [] : ['% of normal']);
+      const rows = years.map((y, i) => [y, round1(values[i]), round1(anoms[i])]
+        .concat(isTemp ? [] : [round1(pcts[i])]));
+      const fname = `trend_${safeName(city)}_${isTemp ? 'temperature' : 'precipitation'}_${startYear}-${THIS_YEAR}.${format}`;
+      try {
+        const md = () => {
+          const L = [];
+          L.push(`# Climate trend — ${loc.name}${loc.country_code ? ', ' + loc.country_code : ''}`, '');
+          L.push('| | |', '|---|---|');
+          L.push(`| Coordinates | ${loc.latitude}, ${loc.longitude} |`);
+          L.push(`| Variable | ${isTemp ? 'Temperature (annual mean)' : 'Precipitation (annual total)'} |`);
+          L.push(`| Period | ${startYear} → ${THIS_YEAR} |`);
+          L.push(`| Complete years used | ${years.length} |`);
+          if (skipped.length) L.push(`| Years skipped (incomplete) | ${skipped.join(', ')} |`);
+          L.push(`| Baseline | 1991–2020 normal = ${round1(baseline)} ${unit} |`);
+          L.push(`| Unit | ${unit} |`);
+          L.push('| Source | Open-Meteo archive (ERA5) |');
+          L.push(`| Generated | ${TODAY} |`, '');
+          L.push(`| ${header.join(' | ')} |`, `|---|${header.slice(1).map(() => '---:').join('|')}|`);
+          rows.forEach(r => L.push(`| ${r.map(v => (v === null ? '—' : v)).join(' | ')} |`));
+          L.push('', '> ERA5 is a reanalysis, not a gauge record. Satellite sounding began at the end of 1978;');
+          L.push('> earlier years rest on far fewer observations, and precipitation is ERA5\'s weaker variable.');
+          return L.join('\n');
+        };
+        const blob = serializeTable(header, rows, format, md,
+          { city, variable: isTemp ? 'temperature' : 'precipitation', baseline, unit, years: rows });
+        downloadBlob(blob, fname);
+        const kb = Math.max(1, Math.round(blob.size / 1024));
+        msg.innerHTML = `<div class="ok-box">✅ Downloaded: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
+      } catch (err) {
+        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      }
+    }
+
+    async function runTrend() {
+      const city = document.getElementById('trCity').value.trim();
+      const out = document.getElementById('trResult');
+      const btn = document.getElementById('trBtn');
+      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+
+      const isTemp = document.querySelector('#trVar input:checked').value === 'temp';
+      const period = document.querySelector('#trPeriod input:checked').value;
+      const startYear = period === 'max' ? 1940 : THIS_YEAR - Number(period) + 1;
+      const field = isTemp ? 'temperature_2m_mean' : 'precipitation_sum';
+      const unit = isTemp ? tempSym() : precSym();
+
+      out.innerHTML = '<div class="spinner"></div><p style="text-align:center;color:#94a3b8;font-size:0.85rem">' +
+                      `Loading daily data from ${Math.min(startYear, 1991)} — this can take a few seconds…</p>`;
+      btn.disabled = true;
+      try {
+        const loc = await geocode(city);
+        // One request covers both the chosen span and the 1991–2020 baseline.
+        const d = await postJSON('/api/history-daily', {
+          latitude: loc.latitude, longitude: loc.longitude,
+          start_date: isoOf(Math.min(startYear, 1991), 1, 1), end_date: TODAY,
+          fields: [field], units: unitsBody()
+        });
+        const times = (d.daily || {}).time || [];
+        const vals = (d.daily || {})[field] || [];
+        if (!times.length) throw new Error('No archive data for this location.');
+
+        const byYear = new Map();
+        times.forEach((t, i) => {
+          const v = vals[i];
+          if (v === null || v === undefined || !Number.isFinite(Number(v))) return;
+          const y = Number(t.slice(0, 4));
+          let g = byYear.get(y);
+          if (!g) byYear.set(y, g = { n: 0, sum: 0 });
+          g.n++;
+          g.sum += Number(v);
+        });
+
+        // A year needs near-full coverage before it can be compared: a part-year
+        // total reads as unusually dry, and a part-year mean is biased toward
+        // whichever seasons it happens to contain.
+        const yearValue = (g) => (isTemp ? g.sum / g.n : g.sum);
+        const complete = (y) => { const g = byYear.get(y); return !!g && g.n >= 360; };
+
+        const baseYears = [];
+        for (let y = 1991; y <= 2020; y++) if (complete(y)) baseYears.push(y);
+        if (baseYears.length < 25) throw new Error('Not enough 1991–2020 data here to form a baseline.');
+        const baseline = baseYears.reduce((a, y) => a + yearValue(byYear.get(y)), 0) / baseYears.length;
+
+        const years = [], skipped = [];
+        for (let y = startYear; y <= THIS_YEAR; y++) (complete(y) ? years : skipped).push(y);
+        if (years.length < 3) throw new Error('Not enough complete years in this period.');
+
+        const values = years.map(y => yearValue(byYear.get(y)));
+        const anoms = values.map(v => v - baseline);
+        const pcts = values.map(v => (baseline === 0 ? null : (v / baseline - 1) * 100));
+        const fit = linFit(years, anoms);
+        const totalChange = fit.slope * (years[years.length - 1] - years[0]);
+
+        if (trendChart) { trendChart.destroy(); trendChart = null; }
+        lastTrend = { city, loc, years, values, anoms, pcts, unit, isTemp, baseline, startYear, skipped };
+
+        const up = totalChange >= 0;
+        const headClass = isTemp ? (up ? 'warm' : 'cool') : (up ? 'wet' : 'dry');
+        const word = isTemp ? (up ? 'warmer' : 'cooler') : (up ? 'wetter' : 'drier');
+
+        let h = `<div class="loc-header">${esc(loc.name)}, ${esc(loc.country_code || '')}</div>`;
+        h += `<div class="loc-sub">${esc(d.latitude)}, ${esc(d.longitude)} · ${esc(d.timezone || '')} · ` +
+             `1991–2020 normal = ${esc(round1(baseline))} ${esc(unit)}</div>`;
+        h += `<div class="anom-head ${headClass}">${esc(signed(totalChange))} ${esc(unit)}</div>`;
+        h += `<div class="anom-sub">${esc(years[0])}–${esc(years[years.length - 1])} — ` +
+             `${esc(years.length)} complete years, trending ${word} by ` +
+             `${esc(Math.abs(Math.round(fit.slope * 100) / 100))} ${esc(unit)} per year.`;
+        if (skipped.length) h += ` Skipped as incomplete: ${esc(skipped.join(', '))}.`;
+        h += '</div>';
+        h += '<div class="chart-wrap"><canvas id="trendCanvas"></canvas></div>';
+
+        h += '<div class="table-wrap"><table><tr><th>Year</th>' +
+             `<th>${isTemp ? 'Annual mean' : 'Annual total'} ${esc(unit)}</th><th>Anomaly ${esc(unit)}</th>` +
+             (isTemp ? '' : '<th>% of normal</th>') + '</tr>';
+        years.forEach((y, i) => {
+          const a = anoms[i];
+          const cls = isTemp ? (a >= 0 ? 'warm' : 'cool') : (a >= 0 ? 'wet' : 'dry');
+          h += `<tr><td>${esc(y)}${y < SATELLITE_ERA ? ' *' : ''}</td><td>${esc(round1(values[i]))}</td>` +
+               `<td class="${cls}">${esc(signed(a))}</td>` +
+               (isTemp ? '' : `<td class="${cls}">${esc(signed(pcts[i]))}%</td>`) + '</tr>';
+        });
+        h += '</table></div>';
+        if (years[0] < SATELLITE_ERA) {
+          h += '<div class="info-box">ℹ️ Years marked * predate the satellite era (1979) — fewer observations stand behind them.</div>';
+        }
+        h += '<div class="dl-row" style="margin-top:14px">' +
+             '<button class="btn btn-teal" style="width:auto" onclick="exportTrend(\'xlsx\')">📥 XLSX</button>' +
+             '<button class="btn btn-gray" onclick="exportTrend(\'csv\')">📄 CSV</button>' +
+             '<button class="btn btn-gray" onclick="exportTrend(\'json\')">🧾 JSON</button>' +
+             '<button class="btn btn-gray" onclick="exportTrend(\'md\')">📝 MD</button>' +
+             '</div><div id="trExportMsg"></div>';
+        h += TREND_NOTE;
+        out.innerHTML = h;
+
+        const ctx = document.getElementById('trendCanvas');
+        if (ctx && typeof Chart !== 'undefined') {
+          const solid = (v) => (isTemp ? (v >= 0 ? '#ef4444' : '#3b82f6') : (v >= 0 ? '#06b6d4' : '#b45309'));
+          trendChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: years.map(String),
+              datasets: [
+                {
+                  label: `Anomaly vs 1991–2020 (${unit})`,
+                  data: anoms,
+                  // pre-satellite bars are drawn faded, matching the * in the table
+                  backgroundColor: anoms.map((v, i) => solid(v) + (years[i] < SATELLITE_ERA ? '66' : ''))
+                },
+                {
+                  type: 'line',
+                  label: 'Trend',
+                  data: years.map(y => fit.slope * y + fit.intercept),
+                  borderColor: '#e2e8f0',
+                  borderWidth: 2,
+                  borderDash: [6, 4],
+                  pointRadius: 0,
+                  fill: false
+                }
+              ]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              interaction: { mode: 'index', intersect: false },
+              plugins: { legend: { labels: { color: '#e0e0e0', boxWidth: 14, font: { size: 11 } } } },
+              scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0', maxTicksLimit: 16 } },
+                y: {
+                  grid: { color: 'rgba(255,255,255,0.08)' },
+                  ticks: { color: '#a0aec0' },
+                  title: { display: true, text: 'Anomaly ' + unit, color: '#a0aec0' }
+                }
+              }
+            },
+            plugins: [satelliteMarker]
+          });
+        }
+      } catch (err) {
+        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
     // ---------- settings persistence ----------
     // City, units, resolution, field selection and dates survive a reload, so
     // the app opens where it was left rather than on the built-in defaults.
     const STORE_KEY = 'weatherweb.v1';
-    const CITY_IDS = ['fcCity', 'hvCity', 'dlCity', 'anCity'];
+    const CITY_IDS = ['fcCity', 'hvCity', 'dlCity', 'anCity', 'trCity'];
+    const RADIO_SETS = [['hv', 'hvRes'], ['dl', 'dlRes'], ['trvar', 'trVar'], ['trper', 'trPeriod']];
 
     const inputVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
     const checkedRes = (id) => {
@@ -1744,7 +2094,7 @@
           cities: Object.fromEntries(CITY_IDS.map(id => [id, inputVal(id)])),
           year: inputVal('anYear'),
           units: { ...UNITS },
-          res: { hv: checkedRes('hvRes'), dl: checkedRes('dlRes') },
+          res: Object.fromEntries(RADIO_SETS.map(([key, id]) => [key, checkedRes(id)])),
           fields: { hv: checkedKeys('hvPills'), dl: checkedKeys('dlPills') },
           dates: {
             hvFrom: dateValue('hvFrom'), hvTo: dateValue('hvTo'),
@@ -1772,7 +2122,7 @@
         });
       }
 
-      if (s.res) [['hv', 'hvRes'], ['dl', 'dlRes']].forEach(([key, id]) => {
+      if (s.res) RADIO_SETS.forEach(([key, id]) => {
         const v = s.res[key];
         const radio = v && document.querySelector(`#${id} input[value="${v}"]`);
         if (!radio) return;
