@@ -12,7 +12,7 @@ RUN git clone --depth 1 https://github.com/mvanhorn/printing-press-library.git /
 COPY go.mod .
 RUN go mod download 2>/dev/null || true
 COPY main.go .
-COPY index.html .
+COPY public/ ./public/
 RUN CGO_ENABLED=0 GOOS=linux go build -o /app/server .
 
 # Stage 2: Runtime
@@ -22,7 +22,7 @@ WORKDIR /app
 
 COPY --from=builder /app/bin/weather-goat-pp-cli /app/bin/weather-goat-pp-cli
 COPY --from=builder /app/server .
-COPY --from=builder /app/index.html .
+COPY --from=builder /app/public ./public
 RUN chmod +x /app/bin/weather-goat-pp-cli
 
 EXPOSE 8097
