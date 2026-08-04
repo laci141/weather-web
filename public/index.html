@@ -114,6 +114,11 @@
       box-shadow: 0 0 30px 2px rgba(20,184,166,.25), 0 18px 50px -18px rgba(0,0,0,.75);
     }
     .bento-card.teal:hover { box-shadow: 0 0 40px 4px rgba(20,184,166,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
+    .bento-card.violet {
+      --a1: #a78bfa; --a2: #7c3aed;
+      box-shadow: 0 0 30px 2px rgba(167,139,250,.25), 0 18px 50px -18px rgba(0,0,0,.75);
+    }
+    .bento-card.violet:hover { box-shadow: 0 0 40px 4px rgba(167,139,250,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
 
     /* keyless-API notice, above the panels */
     .api-note {
@@ -374,6 +379,7 @@
     .btn-gray   { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
     .btn-amber  { background: linear-gradient(135deg, #f59e0b, #ef4444); width: 100%; }
     .btn-teal   { background: linear-gradient(135deg, #14b8a6, #06b6d4); width: 100%; }
+    .btn-violet { background: linear-gradient(135deg, #a78bfa, #7c3aed); width: 100%; }
 
     /* anomaly readout — warmer than baseline reads red, cooler reads blue */
     .anom-head { font-size: 1.6rem; font-weight: 800; margin: 16px 0 4px; }
@@ -576,10 +582,16 @@
         <p>How much warmer, cooler, wetter or drier was a year than a reference period you pick? Month by month, back to 1940.</p>
         <button class="card-btn">Open</button>
       </div>
-      <div class="bento-card glass teal wide" onclick="openModal('trendModal')">
+      <div class="bento-card glass teal" onclick="openModal('trendModal')">
         <div class="bento-icon">📊</div>
         <h3>Climate Trends</h3>
         <p>Temperature or precipitation, year by year, over the last 10 to 80 years — each year against a reference period you pick, with the trend line.</p>
+        <button class="card-btn">Open</button>
+      </div>
+      <div class="bento-card glass violet" onclick="openModal('cmpModal')">
+        <div class="bento-icon">⚖️</div>
+        <h3>City Comparison</h3>
+        <p>Two cities side by side over 5 to 30 years — temperature and precipitation, year by year, with the average difference.</p>
         <button class="card-btn">Open</button>
       </div>
     </div>
@@ -603,6 +615,12 @@
         <span class="seg-label">🌧️ Precip:</span>
         <span class="seg-btns" data-unit="precip">
           <button class="on" data-val="mm">mm</button><button data-val="inch">inch</button>
+        </span>
+      </span>
+      <span class="seg">
+        <span class="seg-label">🖼️ Image:</span>
+        <span class="seg-btns" data-unit="img">
+          <button data-val="1">1×</button><button class="on" data-val="2">2×</button><button data-val="3">3×</button>
         </span>
       </span>
     </div>
@@ -748,6 +766,33 @@
       <div id="trBaseline"></div>
       <button class="btn btn-teal" id="trBtn" onclick="runTrend()">Show trend</button>
       <div id="trResult"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: CITY COMPARISON -->
+  <div class="modal" id="cmpModal" style="--a1:#a78bfa; --a2:#7c3aed">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('cmpModal')">×</button>
+      <h2>⚖️ City Comparison</h2>
+      <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
+        Two cities over the same years, temperature and precipitation in separate tables.
+        Only years that are complete in <em>both</em> cities are used, so a gap on one side
+        cannot show up as a climate difference.
+      </p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="cmpCityA">City A</label>
+          <input type="text" id="cmpCityA" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runCompare()">
+        </div>
+        <div class="form-group">
+          <label for="cmpCityB">City B</label>
+          <input type="text" id="cmpCityB" placeholder="e.g. Budapest" onkeydown="if(event.key==='Enter')runCompare()">
+        </div>
+      </div>
+      <div class="pill-label">Period</div>
+      <div class="pill-grid" id="cmpPeriod"></div>
+      <button class="btn btn-violet" id="cmpBtn" onclick="runCompare()">Compare cities</button>
+      <div id="cmpResult"></div>
     </div>
   </div>
 
@@ -961,7 +1006,9 @@
     buildPresets('dlPresets', 'dl', 'dlFrom', 'dlTo');
 
     // ---------- global units ----------
-    const UNITS = { temp: 'celsius', wind: 'kmh', precip: 'mm' };
+    // `img` is the export image scale (device pixels per CSS pixel); it rides
+    // along in the units bar but never reaches the API.
+    const UNITS = { temp: 'celsius', wind: 'kmh', precip: 'mm', img: '2' };
     const UNIT_SYMBOL = {
       temp: { celsius: '°C', fahrenheit: '°F' },
       wind: { kmh: 'km/h', mph: 'mph' },
@@ -1115,6 +1162,7 @@
                '<button class="btn btn-gray" onclick="exportForecast(\'csv\')">📄 CSV</button>' +
                '<button class="btn btn-gray" onclick="exportForecast(\'json\')">🧾 JSON</button>' +
                '<button class="btn btn-gray" onclick="exportForecast(\'md\')">📝 MD</button>' +
+               imageButtons('forecastImageSpec()', 'fcExportMsg') +
                '</div><div id="fcExportMsg"></div>';
         }
         out.innerHTML = h;
@@ -1553,7 +1601,8 @@
         '<button class="btn btn-gray" onclick="exportView(\'csv\')">📄 CSV</button>' +
         '<button class="btn btn-gray" onclick="exportView(\'json\')">🧾 JSON</button>' +
         '<button class="btn btn-gray" onclick="exportView(\'md\')">📝 MD</button>' +
-        '<button class="btn btn-gray" onclick="exportChartsPNG()">🖼️ Charts PNG</button>' +
+        '<button class="btn btn-gray" onclick="exportChartsPNG()">🖼️ Charts only</button>' +
+        imageButtons('viewImageSpec()', 'hvExportMsg') +
         '</div><div id="hvExportMsg"></div>';
     }
 
@@ -1835,7 +1884,8 @@
 
       // Temperature's yearly figure is the mean of the monthly anomalies;
       // rainfall's is the difference between the annual totals, which is what a
-      // wet or dry year actually means.
+      // wet or dry year actually means. Stored on `v` so the image export can
+      // reuse the same headline without recomputing it.
       let headText, cls, word, sub;
       if (v.isMean) {
         const mean = v.have.reduce((a, b) => a + b, 0) / v.have.length;
@@ -1855,6 +1905,7 @@
               `over ${v.have.length} comparable month${v.have.length === 1 ? '' : 's'}`;
       }
 
+      v.head = { text: headText, cls, word, sub };
       h += `<div class="anom-head ${cls}">${esc(headText)}</div>`;
       h += `<div class="anom-sub">${esc(year)} was ${word} than the ${esc(baseFrom)}–${esc(baseTo)} reference — ${esc(sub)}.</div>`;
       h += `<div class="chart-wrap"><canvas id="anomCanvas_${kind}"></canvas></div>`;
@@ -1877,6 +1928,7 @@
            `<button class="btn btn-gray" onclick="exportAnomaly('${kind}','csv')">📄 CSV</button>` +
            `<button class="btn btn-gray" onclick="exportAnomaly('${kind}','json')">🧾 JSON</button>` +
            `<button class="btn btn-gray" onclick="exportAnomaly('${kind}','md')">📝 MD</button>` +
+           imageButtons(`anomalyImageSpec('${kind}')`, `anExportMsg_${kind}`) +
            `</div><div id="anExportMsg_${kind}"></div>`;
       return h + '</div>';
     }
@@ -2158,7 +2210,8 @@
         const totalChange = fit.slope * (years[years.length - 1] - years[0]);
 
         if (trendChart) { trendChart.destroy(); trendChart = null; }
-        lastTrend = { city, loc, years, values, anoms, pcts, unit, isTemp, baseline, startYear, skipped, baseFrom, baseTo };
+        lastTrend = { city, loc, years, values, anoms, pcts, unit, isTemp, baseline, startYear, skipped,
+                      baseFrom, baseTo, totalChange, slope: fit.slope };
 
         const up = totalChange >= 0;
         const headClass = isTemp ? (up ? 'warm' : 'cool') : (up ? 'wet' : 'dry');
@@ -2194,6 +2247,7 @@
              '<button class="btn btn-gray" onclick="exportTrend(\'csv\')">📄 CSV</button>' +
              '<button class="btn btn-gray" onclick="exportTrend(\'json\')">🧾 JSON</button>' +
              '<button class="btn btn-gray" onclick="exportTrend(\'md\')">📝 MD</button>' +
+             imageButtons('trendImageSpec()', 'trExportMsg') +
              '</div><div id="trExportMsg"></div>';
         h += TREND_NOTE;
         out.innerHTML = h;
@@ -2248,12 +2302,626 @@
       }
     }
 
+    // ---------- image export ----------
+    // Panels are exported by drawing a report onto a canvas rather than
+    // screenshotting the DOM: the text stays crisp at any scale, no extra
+    // library is needed, and the image carries the header, the headline figure
+    // and the whole table instead of whatever happened to be scrolled into view.
+    //
+    // Ceilings measured in Chromium: one side may not exceed 65,535 px, and the
+    // area may not exceed 16,384² = 268,435,456 px (16,385² already fails).
+    // safeScale keeps a request inside both; drawReport also steps the scale
+    // down if a device runs out of memory regardless.
+    const CANVAS_MAX_DIM = 65535;
+    const CANVAS_MAX_AREA = 268435456;
+    const REPORT_W = 1240;
+    const REPORT_PAD = 48;
+    const IMAGE_ROW_CAP = 500;
+
+    function safeScale(w, h, want) {
+      return Math.max(1, Math.min(want, CANVAS_MAX_DIM / w, CANVAS_MAX_DIM / h,
+        Math.sqrt(CANVAS_MAX_AREA / (w * h))));
+    }
+
+    function wrapLines(ctx, text, maxW) {
+      const words = String(text).split(/\s+/);
+      const lines = [];
+      let line = '';
+      words.forEach(w => {
+        const t = line ? line + ' ' + w : w;
+        if (line && ctx.measureText(t).width > maxW) { lines.push(line); line = w; }
+        else line = t;
+      });
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    // Renders a chart config offscreen at `scale` device pixels per CSS pixel,
+    // so the bitmap is high-resolution while the fonts keep their on-screen
+    // proportions. Resolves to null when Chart.js is unavailable.
+    function renderChartImage(config, w, h, scale) {
+      return new Promise((resolve) => {
+        if (typeof Chart === 'undefined' || !config) { resolve(null); return; }
+        const host = document.createElement('div');
+        host.style.cssText = 'position:fixed;left:-99999px;top:0;';
+        const cv = document.createElement('canvas');
+        cv.style.width = w + 'px';
+        cv.style.height = h + 'px';
+        host.appendChild(cv);
+        document.body.appendChild(host);
+        let url = null;
+        let chart = null;
+        try {
+          chart = new Chart(cv, {
+            type: config.type,
+            data: config.data,
+            options: { ...(config.options || {}), responsive: false, animation: false, devicePixelRatio: scale },
+            plugins: config.plugins || []
+          });
+          url = chart.toBase64Image();
+        } catch (err) {
+          url = null;
+        }
+        if (chart) { try { chart.destroy(); } catch (err) { /* already gone */ } }
+        host.remove();
+        if (!url || url.length < 100) { resolve(null); return; }
+        const im = new Image();
+        im.onload = () => resolve(im);
+        im.onerror = () => resolve(null);
+        im.src = url;
+      });
+    }
+
+    function measureReport(spec, mctx) {
+      const innerW = REPORT_W - REPORT_PAD * 2;
+      mctx.font = '18px sans-serif';
+      const footer = (spec.footer || []).flatMap(t => wrapLines(mctx, t, innerW));
+      let h = REPORT_PAD + 58;
+      h += (spec.subtitle || []).length * 30 + 10;
+      if (spec.headline) h += 92 + (spec.headline.sub ? 60 : 0);
+      (spec.sections || []).forEach(s => {
+        if (s.heading) h += 50;
+        if (s.chart) h += (s.chart.height || 420) + 26;
+        if (s.table) h += 48 + Math.min(s.table.rows.length, IMAGE_ROW_CAP) * 38 + 10;
+        if (s.note) h += 34;
+        h += 18;
+      });
+      h += 18 + footer.length * 26 + REPORT_PAD;
+      return { height: Math.ceil(h), footer, innerW };
+    }
+
+    function drawReportTable(ctx, table, x, y, w) {
+      const rows = table.rows.slice(0, IMAGE_ROW_CAP);
+      const cols = table.header.length;
+      const firstW = Math.round(w * 0.28);
+      const restW = Math.round((w - firstW) / Math.max(1, cols - 1));
+      const colX = (c) => (c === 0 ? x : x + firstW + (c - 1) * restW);
+      const colW = (c) => (c === 0 ? firstW : restW);
+
+      ctx.fillStyle = 'rgba(255,255,255,0.08)';
+      ctx.fillRect(x, y, w, 44);
+      ctx.font = 'bold 19px sans-serif';
+      ctx.fillStyle = '#cbd5e1';
+      table.header.forEach((hd, c) => {
+        ctx.textAlign = c === 0 ? 'left' : 'right';
+        ctx.fillText(String(hd), c === 0 ? colX(c) + 12 : colX(c) + colW(c) - 12, y + 29);
+      });
+
+      let ry = y + 44;
+      ctx.font = '19px sans-serif';
+      rows.forEach((row, r) => {
+        if (r % 2 === 1) {
+          ctx.fillStyle = 'rgba(255,255,255,0.035)';
+          ctx.fillRect(x, ry, w, 38);
+        }
+        row.forEach((cell, c) => {
+          ctx.fillStyle = (table.cellColor && table.cellColor(r, c, cell)) || (c === 0 ? '#e2e8f0' : '#cbd5e1');
+          ctx.textAlign = c === 0 ? 'left' : 'right';
+          const txt = cell === null || cell === undefined ? '—' : String(cell);
+          ctx.fillText(txt, c === 0 ? colX(c) + 12 : colX(c) + colW(c) - 12, ry + 25);
+        });
+        ry += 38;
+      });
+      ctx.textAlign = 'left';
+      return ry;
+    }
+
+    async function drawReport(spec, mime, scale) {
+      const probe = document.createElement('canvas').getContext('2d');
+      const { height, footer, innerW } = measureReport(spec, probe);
+      const s = safeScale(REPORT_W, height, scale);
+
+      const cv = document.createElement('canvas');
+      cv.width = Math.round(REPORT_W * s);
+      cv.height = Math.round(height * s);
+      const ctx = cv.getContext('2d');
+      if (!ctx) return null;
+      ctx.scale(s, s);
+      ctx.textBaseline = 'alphabetic';
+
+      const g = ctx.createLinearGradient(0, 0, REPORT_W, height);
+      g.addColorStop(0, '#0b1020');
+      g.addColorStop(1, '#141d33');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, REPORT_W, height);
+
+      let y = REPORT_PAD + 40;
+      ctx.font = 'bold 38px sans-serif';
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(`${spec.emoji || ''} ${spec.title}`.trim(), REPORT_PAD, y);
+      y += 20;
+
+      ctx.font = '20px sans-serif';
+      ctx.fillStyle = '#94a3b8';
+      (spec.subtitle || []).forEach(line => { y += 30; ctx.fillText(line, REPORT_PAD, y); });
+      y += 10;
+
+      if (spec.headline) {
+        y += 62;
+        ctx.font = 'bold 56px sans-serif';
+        ctx.fillStyle = spec.headline.color || '#ffffff';
+        ctx.fillText(spec.headline.text, REPORT_PAD, y);
+        if (spec.headline.sub) {
+          y += 34;
+          ctx.font = '20px sans-serif';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(spec.headline.sub, REPORT_PAD, y);
+          y += 26;
+        } else {
+          y += 30;
+        }
+      }
+
+      for (const sec of spec.sections || []) {
+        if (sec.heading) {
+          y += 40;
+          ctx.font = 'bold 26px sans-serif';
+          ctx.fillStyle = '#e2e8f0';
+          ctx.fillText(sec.heading, REPORT_PAD, y);
+          y += 10;
+        }
+        if (sec.chart) {
+          const ch = sec.chart.height || 420;
+          const img = await renderChartImage(sec.chart.config, innerW, ch, s);
+          if (img) {
+            ctx.drawImage(img, REPORT_PAD, y, innerW, ch);
+          } else {
+            // Chart.js comes from a CDN; if it never loaded, say so rather than
+            // leaving an unexplained gap in the image.
+            ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+            ctx.strokeRect(REPORT_PAD, y, innerW, ch);
+            ctx.font = 'italic 20px sans-serif';
+            ctx.fillStyle = '#64748b';
+            ctx.textAlign = 'center';
+            ctx.fillText('Chart unavailable — Chart.js did not load. The table below carries the same data.',
+              REPORT_PAD + innerW / 2, y + ch / 2);
+            ctx.textAlign = 'left';
+          }
+          y += ch + 26;
+        }
+        if (sec.table) {
+          y = drawReportTable(ctx, sec.table, REPORT_PAD, y, innerW) + 10;
+          if (sec.table.rows.length > IMAGE_ROW_CAP) {
+            ctx.font = 'italic 17px sans-serif';
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText(`Showing the first ${IMAGE_ROW_CAP} of ${sec.table.rows.length} rows — the full set is in the XLSX/CSV export.`, REPORT_PAD, y + 20);
+            y += 30;
+          }
+        }
+        if (sec.note) {
+          ctx.font = '18px sans-serif';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(sec.note, REPORT_PAD, y + 22);
+          y += 34;
+        }
+        y += 18;
+      }
+
+      y += 18;
+      ctx.font = '18px sans-serif';
+      ctx.fillStyle = '#64748b';
+      footer.forEach(line => { y += 26; ctx.fillText(line, REPORT_PAD, y); });
+
+      const blob = await new Promise(resolve => {
+        try { cv.toBlob(resolve, mime, mime === 'image/jpeg' ? 0.92 : undefined); }
+        catch (err) { resolve(null); }
+      });
+      if (!blob) return null;
+      return { blob, w: cv.width, h: cv.height, scale: s };
+    }
+
+    async function exportImage(spec, mime, msgId) {
+      const msg = document.getElementById(msgId);
+      if (!msg || !spec) return;
+      const ext = mime === 'image/jpeg' ? 'jpg' : 'png';
+      msg.innerHTML = '<div class="info-box">🖼️ Rendering the image…</div>';
+      try {
+        let want = Number(UNITS.img || 2);
+        let out = null;
+        // step down rather than fail outright if the device cannot hold the bitmap
+        while (!out && want >= 1) {
+          out = await drawReport(spec, mime, want);
+          if (!out) want -= 1;
+        }
+        if (!out) throw new Error('This device could not allocate an image that large — try 1× in the Image setting.');
+        downloadBlob(out.blob, `${spec.filename}.${ext}`);
+        const kb = Math.max(1, Math.round(out.blob.size / 1024));
+        const note = out.scale < Number(UNITS.img || 2)
+          ? ` (scaled to ${out.scale.toFixed(1)}× to stay inside the canvas limit)` : '';
+        msg.innerHTML = `<div class="ok-box">✅ Saved ${out.w.toLocaleString()}×${out.h.toLocaleString()} px · ` +
+                        `${kb.toLocaleString()} KB · ${esc(spec.filename)}.${ext}${note}</div>`;
+      } catch (err) {
+        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      }
+    }
+
+    const IMAGE_FOOTER = [
+      'Source: Open-Meteo archive (ERA5 reanalysis) — a weather model constrained by observations, not a station record.',
+      'Satellite sounding began at the end of 1978; earlier years rest on far fewer observations. Temperature is among ERA5\'s ' +
+      'most reliable variables, precipitation among its least, and ECMWF advises caution using ERA5 for long-term trends.',
+      'Generated by weather-web · ' + TODAY
+    ];
+
+    // Adds the PNG/JPEG pair to a panel's export row.
+    function imageButtons(specFn, msgId) {
+      return `<button class="btn btn-gray" onclick="exportImage(${specFn}, 'image/png', '${msgId}')">🖼️ PNG</button>` +
+             `<button class="btn btn-gray" onclick="exportImage(${specFn}, 'image/jpeg', '${msgId}')">📷 JPEG</button>`;
+    }
+
+    // ---------- report specs for the existing panels ----------
+    const CLS_COLOR = { warm: '#f87171', cool: '#60a5fa', wet: '#22d3ee', dry: '#f59e0b' };
+    const anomColor = (isMean, v) => (v === null ? null : CLS_COLOR[isMean ? (v >= 0 ? 'warm' : 'cool') : (v >= 0 ? 'wet' : 'dry')]);
+
+    function trendImageSpec() {
+      const t = lastTrend;
+      if (!t) return null;
+      const label = t.isTemp ? 'Temperature' : 'Precipitation';
+      const header = ['Year', `${t.isTemp ? 'Annual mean' : 'Annual total'} ${t.unit}`, `Anomaly ${t.unit}`]
+        .concat(t.isTemp ? [] : ['% of normal']);
+      const rows = t.years.map((y, i) =>
+        [String(y) + (y < SATELLITE_ERA ? ' *' : ''), round1(t.values[i]), signed(t.anoms[i])]
+          .concat(t.isTemp ? [] : [signed(t.pcts[i]) + '%']));
+      return {
+        emoji: '📊', title: `Climate Trends — ${label}`,
+        filename: `trend_${safeName(t.city)}_${t.isTemp ? 'temperature' : 'precipitation'}_${t.years[0]}-${t.years[t.years.length - 1]}`,
+        subtitle: [
+          `${t.loc.name}${t.loc.country_code ? ', ' + t.loc.country_code : ''} · ${t.loc.latitude}, ${t.loc.longitude}`,
+          `${t.years[0]}–${t.years[t.years.length - 1]} · ${t.years.length} complete years · reference ${t.baseFrom}–${t.baseTo} = ${round1(t.baseline)} ${t.unit}`,
+          t.skipped.length ? `Skipped as incomplete: ${t.skipped.join(', ')}` : ''
+        ].filter(Boolean),
+        headline: {
+          text: `${signed(t.totalChange)} ${t.unit}`,
+          color: CLS_COLOR[t.isTemp ? (t.totalChange >= 0 ? 'warm' : 'cool') : (t.totalChange >= 0 ? 'wet' : 'dry')],
+          sub: `across the period, trending ${t.isTemp ? (t.totalChange >= 0 ? 'warmer' : 'cooler') : (t.totalChange >= 0 ? 'wetter' : 'drier')} ` +
+               `by ${Math.abs(Math.round(t.slope * 100) / 100)} ${t.unit} per year`
+        },
+        sections: [
+          { chart: { config: trendChart && trendChart.config, height: 440 } },
+          {
+            heading: 'Year by year',
+            table: { header, rows, cellColor: (r, c) => (c === 2 ? anomColor(t.isTemp, t.anoms[r]) : null) },
+            note: t.years[0] < SATELLITE_ERA ? '* predates the satellite era (1979) — fewer observations stand behind those years.' : ''
+          }
+        ],
+        footer: IMAGE_FOOTER
+      };
+    }
+
+    function anomalyImageSpec(kind) {
+      const a = lastAnomaly;
+      if (!a || !a[kind] || !a[kind].have.length) return null;
+      const v = a[kind];
+      const header = ['Month', `${a.year} ${v.isMean ? 'mean' : 'total'} ${v.unit}`,
+                      `${a.baseFrom}–${a.baseTo} ${v.unit}`, `Anomaly ${v.unit}`, '% of normal'];
+      const rows = MONTH_FULL.map((name, i) => [
+        name, round1(v.target[i]), round1(v.base[i]),
+        v.anom[i] === null ? null : signed(v.anom[i]),
+        v.pct[i] === null ? null : signed(v.pct[i]) + '%'
+      ]);
+      return {
+        emoji: v.isMean ? '🌡️' : '🌧️', title: `Climate Anomaly — ${v.label}`,
+        filename: `anomaly_${safeName(a.city)}_${v.label.toLowerCase()}_${a.year}_vs_${a.baseFrom}-${a.baseTo}`,
+        subtitle: [
+          `${a.loc.name}${a.loc.country_code ? ', ' + a.loc.country_code : ''} · ${a.loc.latitude}, ${a.loc.longitude}`,
+          `${a.year} against the ${a.baseFrom}–${a.baseTo} reference (${a.baseTo - a.baseFrom + 1} years) · ${v.have.length} comparable months`
+        ],
+        headline: { text: v.head.text, color: CLS_COLOR[v.head.cls], sub: `${a.year} was ${v.head.word} — ${v.head.sub}` },
+        sections: [
+          { chart: { config: (anomCharts[kind === 'temp' ? 0 : 1] || {}).config, height: 400 } },
+          { heading: 'Month by month', table: { header, rows, cellColor: (r, c) => ((c === 3 || c === 4) ? anomColor(v.isMean, v.anom[r]) : null) } }
+        ],
+        footer: IMAGE_FOOTER
+      };
+    }
+
+    function viewImageSpec() {
+      const v = lastView;
+      if (!v) return null;
+      const sections = viewCharts.map((c, i) => ({
+        heading: viewCharts.length > 1 ? `Block ${i + 1}` : null,
+        chart: { config: c.config, height: 420 }
+      }));
+      const header = ['Time', ...v.fields.map(fieldLabel)];
+      const rows = v.times.map((t, i) => [t.replace('T', ' '), ...v.fields.map(f => {
+        const x = (v.block[f] || [])[i];
+        return x === null || x === undefined ? null : x;
+      })]);
+      sections.push({ heading: 'Data', table: { header, rows } });
+      return {
+        emoji: '📅', title: 'Historical View',
+        filename: `history_${safeName(v.city)}_${v.from}_${v.to}_${v.res}`,
+        subtitle: [
+          `${v.loc.name}${v.loc.country_code ? ', ' + v.loc.country_code : ''} · ${v.loc.latitude}, ${v.loc.longitude}`,
+          `${v.from} → ${v.to} · ${v.res} · ${v.times.length.toLocaleString()} points · units ${tempSym()}, ${windSym()}, ${precSym()}`
+        ],
+        sections, footer: IMAGE_FOOTER
+      };
+    }
+
+    function forecastImageSpec() {
+      const f = lastForecast;
+      if (!f) return null;
+      const header = ['Day', ...f.fields.map(fieldLabel)];
+      const rows = f.times.map((t, i) => [`${weekdayOf(t)} ${t}`, ...f.fields.map(x => {
+        const val = (f.block[x] || [])[i];
+        return val === null || val === undefined ? null : val;
+      })]);
+      const cur = (f.meta && f.meta.current) || {};
+      const units = (f.meta && f.meta.current_units) || {};
+      const now = ['temperature_2m', 'apparent_temperature', 'relative_humidity_2m', 'wind_speed_10m', 'precipitation']
+        .filter(k => cur[k] !== undefined)
+        .map(k => `${fieldLabel(k === 'temperature_2m' ? 'temperature_2m' : k)}: ${cur[k]}${units[k] || ''}`)
+        .join('  ·  ');
+      return {
+        emoji: '🌡️', title: 'Current Weather & 7-day outlook',
+        filename: `forecast_${safeName(f.city)}_${f.from}`,
+        subtitle: [
+          `${f.loc.name}${f.loc.country_code ? ', ' + f.loc.country_code : ''} · ${f.loc.latitude}, ${f.loc.longitude}` +
+            (f.meta && f.meta.timezone ? ` · ${f.meta.timezone}` : ''),
+          now
+        ].filter(Boolean),
+        headline: cur.temperature_2m !== undefined
+          ? { text: `${cur.temperature_2m}${units.temperature_2m || ''}`, color: '#93c5fd', sub: 'current temperature' }
+          : null,
+        sections: [{ heading: 'Next 7 days', table: { header, rows } }],
+        footer: IMAGE_FOOTER
+      };
+    }
+
+    // ---------- CITY COMPARISON ----------
+    // Two places side by side over the same years, for temperature and
+    // precipitation. Only years that are complete in BOTH cities are used, so a
+    // gap on one side cannot show up as a climate difference.
+    const COMPARE_PERIODS = [5, 10, 15, 20, 25, 30];
+    let compareCharts = [];
+    let lastCompare = null;
+
+    function buildComparePeriods() {
+      document.getElementById('cmpPeriod').innerHTML = COMPARE_PERIODS.map(n =>
+        `<label class="pill${n === 20 ? ' on' : ''}" style="--pc:#a78bfa" data-pill="c${n}">` +
+        `<input type="radio" name="cmpper" value="${n}"${n === 20 ? ' checked' : ''}>Last ${n} years</label>`
+      ).join('');
+    }
+    buildComparePeriods();
+
+    // annual value per year, keeping only years with near-full coverage
+    function annualByYear(times, values, isMean) {
+      const acc = new Map();
+      times.forEach((t, i) => {
+        const v = values[i];
+        if (v === null || v === undefined || !Number.isFinite(Number(v))) return;
+        const y = Number(t.slice(0, 4));
+        let g = acc.get(y);
+        if (!g) acc.set(y, g = { n: 0, sum: 0 });
+        g.n++;
+        g.sum += Number(v);
+      });
+      const out = new Map();
+      acc.forEach((g, y) => { if (g.n >= 360) out.set(y, isMean ? g.sum / g.n : g.sum); });
+      return out;
+    }
+
+    function compareImageSpec(kind) {
+      const c = lastCompare;
+      if (!c || !c[kind]) return null;
+      const v = c[kind];
+      const header = ['Year', `${c.a.name} ${v.unit}`, `${c.b.name} ${v.unit}`, `Difference ${v.unit}`];
+      const rows = c.years.map((y, i) => [String(y), round1(v.aVals[i]), round1(v.bVals[i]), signed(v.diffs[i])]);
+      return {
+        emoji: v.isMean ? '🌡️' : '🌧️', title: `City Comparison — ${v.label}`,
+        filename: `compare_${safeName(c.a.name)}_vs_${safeName(c.b.name)}_${v.label.toLowerCase()}_${c.years[0]}-${c.years[c.years.length - 1]}`,
+        subtitle: [
+          `${c.a.name}${c.a.country_code ? ', ' + c.a.country_code : ''} (${c.a.latitude}, ${c.a.longitude})  vs  ` +
+          `${c.b.name}${c.b.country_code ? ', ' + c.b.country_code : ''} (${c.b.latitude}, ${c.b.longitude})`,
+          `${c.years[0]}–${c.years[c.years.length - 1]} · ${c.years.length} years complete in both`
+        ],
+        headline: { text: v.head.text, color: CLS_COLOR[v.head.cls], sub: v.head.sub },
+        sections: [
+          { chart: { config: (compareCharts[kind === 'temp' ? 0 : 1] || {}).config, height: 440 } },
+          { heading: 'Year by year', table: { header, rows, cellColor: (r, c2) => (c2 === 3 ? anomColor(v.isMean, v.diffs[r]) : null) } }
+        ],
+        footer: IMAGE_FOOTER
+      };
+    }
+
+    function exportCompare(kind, format) {
+      const msg = document.getElementById('cmpExportMsg_' + kind);
+      const c = lastCompare;
+      if (!c || !msg) return;
+      const v = c[kind];
+      const header = ['Year', `${c.a.name} ${v.unit}`, `${c.b.name} ${v.unit}`, `Difference ${v.unit}`];
+      const rows = c.years.map((y, i) => [y, round1(v.aVals[i]), round1(v.bVals[i]), round1(v.diffs[i])]);
+      const fname = `compare_${safeName(c.a.name)}_vs_${safeName(c.b.name)}_${v.label.toLowerCase()}_${c.years[0]}-${c.years[c.years.length - 1]}.${format}`;
+      try {
+        const md = () => {
+          const L = [];
+          L.push(`# ${v.label} — ${c.a.name} vs ${c.b.name}`, '');
+          L.push('| | |', '|---|---|');
+          L.push(`| ${c.a.name} | ${c.a.latitude}, ${c.a.longitude} |`);
+          L.push(`| ${c.b.name} | ${c.b.latitude}, ${c.b.longitude} |`);
+          L.push(`| Period | ${c.years[0]}–${c.years[c.years.length - 1]} (${c.years.length} years complete in both) |`);
+          L.push(`| Variable | ${v.label} — annual ${v.isMean ? 'mean' : 'total'} |`);
+          L.push(`| Difference | ${v.head.text} |`);
+          L.push(`| Unit | ${v.unit} |`);
+          L.push('| Source | Open-Meteo archive (ERA5) |');
+          L.push(`| Generated | ${TODAY} |`, '');
+          L.push(`| ${header.join(' | ')} |`, '|---|---:|---:|---:|');
+          rows.forEach(r => L.push(`| ${r.map(x => (x === null ? '—' : x)).join(' | ')} |`));
+          return L.join('\n');
+        };
+        const blob = serializeTable(header, rows, format, md,
+          { cityA: c.a.name, cityB: c.b.name, variable: v.label, unit: v.unit, years: rows });
+        downloadBlob(blob, fname);
+        const kb = Math.max(1, Math.round(blob.size / 1024));
+        msg.innerHTML = `<div class="ok-box">✅ Downloaded: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
+      } catch (err) {
+        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      }
+    }
+
+    function compareSection(kind, v, c) {
+      let h = `<div class="week-block"><div class="week-head">${v.isMean ? '🌡️' : '🌧️'} ${esc(v.label)}</div>`;
+      h += `<div class="anom-head ${v.head.cls}">${esc(v.head.text)}</div>`;
+      h += `<div class="anom-sub">${esc(v.head.sub)}</div>`;
+      h += `<div class="chart-wrap"><canvas id="cmpCanvas_${kind}"></canvas></div>`;
+      h += '<div class="table-wrap"><table><tr><th>Year</th>' +
+           `<th>${esc(c.a.name)} ${esc(v.unit)}</th><th>${esc(c.b.name)} ${esc(v.unit)}</th>` +
+           `<th>Difference ${esc(v.unit)}</th></tr>`;
+      c.years.forEach((y, i) => {
+        const d = v.diffs[i];
+        const cls = v.isMean ? (d >= 0 ? 'warm' : 'cool') : (d >= 0 ? 'wet' : 'dry');
+        h += `<tr><td>${esc(y)}</td><td>${esc(round1(v.aVals[i]))}</td><td>${esc(round1(v.bVals[i]))}</td>` +
+             `<td class="${cls}">${esc(signed(d))}</td></tr>`;
+      });
+      h += '</table></div>';
+      h += '<div class="dl-row" style="margin-top:12px">' +
+           `<button class="btn btn-violet" style="width:auto" onclick="exportCompare('${kind}','xlsx')">📥 XLSX</button>` +
+           `<button class="btn btn-gray" onclick="exportCompare('${kind}','csv')">📄 CSV</button>` +
+           `<button class="btn btn-gray" onclick="exportCompare('${kind}','json')">🧾 JSON</button>` +
+           `<button class="btn btn-gray" onclick="exportCompare('${kind}','md')">📝 MD</button>` +
+           imageButtons(`compareImageSpec('${kind}')`, `cmpExportMsg_${kind}`) +
+           `</div><div id="cmpExportMsg_${kind}"></div>`;
+      return h + '</div>';
+    }
+
+    function drawCompareChart(kind, v, c) {
+      const ctx = document.getElementById('cmpCanvas_' + kind);
+      if (!ctx || typeof Chart === 'undefined') return;
+      compareCharts.push(new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: c.years.map(String),
+          datasets: [
+            { label: `${c.a.name} (${v.unit})`, data: v.aVals, backgroundColor: '#f59e0b' },
+            { label: `${c.b.name} (${v.unit})`, data: v.bVals, backgroundColor: '#38bdf8' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { labels: { color: '#e0e0e0', boxWidth: 14, font: { size: 11 } } } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0', maxTicksLimit: 16 } },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.08)' },
+              ticks: { color: '#a0aec0' },
+              title: { display: true, text: `${v.label} ${v.unit}`, color: '#a0aec0' }
+            }
+          }
+        }
+      }));
+    }
+
+    async function runCompare() {
+      const nameA = document.getElementById('cmpCityA').value.trim();
+      const nameB = document.getElementById('cmpCityB').value.trim();
+      const out = document.getElementById('cmpResult');
+      const btn = document.getElementById('cmpBtn');
+
+      if (!nameA || !nameB) { out.innerHTML = '<div class="error-box">Enter both cities.</div>'; return; }
+      const period = Number(document.querySelector('#cmpPeriod input:checked').value);
+      const startYear = THIS_YEAR - period + 1;
+
+      out.innerHTML = '<div class="spinner"></div><p style="text-align:center;color:#94a3b8;font-size:0.85rem">' +
+                      `Loading ${period} years for both cities — this takes a few seconds…</p>`;
+      btn.disabled = true;
+      try {
+        const [a, b] = await Promise.all([geocode(nameA), geocode(nameB)]);
+        const ask = (loc) => postJSON('/api/history-daily', {
+          latitude: loc.latitude, longitude: loc.longitude,
+          start_date: isoOf(startYear, 1, 1), end_date: TODAY,
+          fields: ['temperature_2m_mean', 'precipitation_sum'], units: unitsBody()
+        });
+        const [da, db] = await Promise.all([ask(a), ask(b)]);
+        const ta = (da.daily || {}).time || [];
+        const tb = (db.daily || {}).time || [];
+        if (!ta.length || !tb.length) throw new Error('No archive data for one of these cities.');
+
+        const build = (field, isMean, unit, label) => {
+          const A = annualByYear(ta, (da.daily || {})[field] || [], isMean);
+          const B = annualByYear(tb, (db.daily || {})[field] || [], isMean);
+          const years = [];
+          for (let y = startYear; y <= THIS_YEAR; y++) if (A.has(y) && B.has(y)) years.push(y);
+          return { years, A, B, isMean, unit, label };
+        };
+        const rawT = build('temperature_2m_mean', true, tempSym(), 'Temperature');
+        const rawP = build('precipitation_sum', false, precSym(), 'Precipitation');
+        // both variables share the years complete on both sides
+        const years = rawT.years.filter(y => rawP.years.includes(y));
+        if (years.length < 2) throw new Error('Fewer than two years are complete in both cities for this period.');
+
+        const finish = (raw) => {
+          const aVals = years.map(y => raw.A.get(y));
+          const bVals = years.map(y => raw.B.get(y));
+          const diffs = aVals.map((v, i) => v - bVals[i]);
+          const mean = diffs.reduce((x, y2) => x + y2, 0) / diffs.length;
+          const aMean = aVals.reduce((x, y2) => x + y2, 0) / aVals.length;
+          const bMean = bVals.reduce((x, y2) => x + y2, 0) / bVals.length;
+          const word = raw.isMean ? (mean >= 0 ? 'warmer' : 'cooler') : (mean >= 0 ? 'wetter' : 'drier');
+          const cls = raw.isMean ? (mean >= 0 ? 'warm' : 'cool') : (mean >= 0 ? 'wet' : 'dry');
+          const pct = bMean ? (mean / bMean) * 100 : 0;
+          return {
+            ...raw, years, aVals, bVals, diffs,
+            head: {
+              text: raw.isMean ? `${signed(mean)} ${raw.unit}` : `${signed(mean)} ${raw.unit} (${signed(pct)}%)`,
+              cls,
+              sub: `${nameA} is ${word} than ${nameB} on average over ${years[0]}–${years[years.length - 1]} — ` +
+                   `${round1(aMean)} vs ${round1(bMean)} ${raw.unit} a year`
+            }
+          };
+        };
+        const temp = finish(rawT);
+        const precip = finish(rawP);
+
+        compareCharts.forEach(c => c.destroy());
+        compareCharts = [];
+        lastCompare = { a, b, years, temp, precip };
+
+        let h = `<div class="loc-header">${esc(a.name)}, ${esc(a.country_code || '')} vs ${esc(b.name)}, ${esc(b.country_code || '')}</div>`;
+        h += `<div class="loc-sub">${esc(a.latitude)}, ${esc(a.longitude)} · ${esc(b.latitude)}, ${esc(b.longitude)} — ` +
+             `${esc(years[0])}–${esc(years[years.length - 1])}, ${esc(years.length)} years complete in both</div>`;
+        h += compareSection('temp', temp, lastCompare);
+        h += compareSection('precip', precip, lastCompare);
+        h += TREND_NOTE;
+        out.innerHTML = h;
+
+        drawCompareChart('temp', temp, lastCompare);
+        drawCompareChart('precip', precip, lastCompare);
+      } catch (err) {
+        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
     // ---------- settings persistence ----------
     // City, units, resolution, field selection and dates survive a reload, so
     // the app opens where it was left rather than on the built-in defaults.
     const STORE_KEY = 'weatherweb.v1';
-    const CITY_IDS = ['fcCity', 'hvCity', 'dlCity', 'anCity', 'trCity'];
-    const RADIO_SETS = [['hv', 'hvRes'], ['dl', 'dlRes'], ['trvar', 'trVar'], ['trper', 'trPeriod']];
+    const CITY_IDS = ['fcCity', 'hvCity', 'dlCity', 'anCity', 'trCity', 'cmpCityA', 'cmpCityB'];
+    const RADIO_SETS = [['hv', 'hvRes'], ['dl', 'dlRes'], ['trvar', 'trVar'], ['trper', 'trPeriod'],
+                        ['cmpper', 'cmpPeriod']];
 
     const inputVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
     const checkedRes = (id) => {

@@ -9,6 +9,8 @@ Historical weather viewer + data downloader for Open-Meteo (daily/hourly/3-hour/
 - **Data Downloader**: Any date range (1940–today), multiple resolutions, XLSX/CSV/JSON/Markdown export
 - **Climate Anomaly**: Any year against any reference period, month by month — temperature *and* precipitation in separate tables, each with its own chart and export
 - **Climate Trends**: Temperature or precipitation year by year over the last 10–80 years (or 1940→today), with a fitted trend line
+- **City Comparison**: Two cities side by side over 5–30 years, temperature and precipitation, with the average difference
+- **Image export**: Every panel exports a PNG or JPEG report — header, headline figure, chart and full table — at 1×, 2× or 3×
 - **Reference period**: Defaults to 1991–2020 (the WMO normal) but freely settable — 1961–1990, 1981–2010, single decades, or any span of 5+ years
 - **Keyless**: No API key anywhere — Open-Meteo is free and keyless for non-commercial use
 - **Date entry**: Explicit Year / Month / Day controls — no OS calendar on mobile, and the month can never be read as the day
@@ -43,6 +45,22 @@ every level. A baseline January for rainfall is therefore the average January
 *total* across the reference years, not the average rainy day — and the yearly
 precipitation headline is the difference between annual totals, reported in mm
 and as a percentage of normal.
+
+### Image export
+
+Reports are **drawn onto a canvas**, not screenshotted from the DOM: the text
+stays crisp at any scale, no extra library is needed, and the image carries the
+header, the headline figure and the whole table rather than whatever happened to
+be scrolled into view.
+
+Measured ceilings in Chromium: one side may not exceed **65,535 px**, and the
+total area may not exceed **16,384² = 268,435,456 px** (16,385² already fails).
+The scale is clamped to stay inside both, and steps down automatically if a
+device cannot allocate the bitmap anyway — the confirmation says so when it does.
+
+At the default 2× a report is 2,480 px wide. PNG is lossless and right for
+printing or archiving; JPEG is roughly 6× smaller (measured: 4.7 MB vs 0.76 MB
+on a 2400×3200 report) and right for sending.
 
 ### Markdown export
 
