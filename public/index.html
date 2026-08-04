@@ -256,6 +256,7 @@
       background: rgba(255, 255, 255, 0.12);
       border-color: rgba(59, 130, 246, 0.6);
     }
+    .date-echo { margin-top: 5px; font-size: 0.78rem; color: #94a3b8; min-height: 1.1em; }
 
     /* PILL TOGGLES — even grid: 4 per row desktop, 2 per row mobile */
     .pill-grid {
@@ -389,6 +390,7 @@
     /* Modal text ~20% bigger for readability (labels, inputs, chips, tables) */
     .modal-content .form-group label { font-size: 1.06rem; }
     .modal-content .form-group input { font-size: 1.2rem; }
+    .modal-content .date-echo { font-size: 0.92rem; }
     .modal-content .pill-label { font-size: 1.06rem; }
     .modal-content .pill { font-size: 1.06rem; }
     .modal-content table { font-size: 1.06rem; }
@@ -522,10 +524,12 @@
         <div class="form-group">
           <label for="hvFrom">From</label>
           <input type="date" id="hvFrom" value="1966-05-05" min="1940-01-01">
+          <div class="date-echo" id="hvFromEcho"></div>
         </div>
         <div class="form-group">
           <label for="hvTo">To</label>
           <input type="date" id="hvTo" value="1966-06-05" min="1940-01-01">
+          <div class="date-echo" id="hvToEcho"></div>
         </div>
       </div>
       <div class="pill-label">Resolution <span style="color:#64748b">(daily ≤35 days · hourly ≤3 days · 15-min ≤1 day, last ~3 months)</span></div>
@@ -554,10 +558,12 @@
         <div class="form-group">
           <label for="dlFrom">From</label>
           <input type="date" id="dlFrom" value="1985-01-01" min="1940-01-01">
+          <div class="date-echo" id="dlFromEcho"></div>
         </div>
         <div class="form-group">
           <label for="dlTo">To</label>
           <input type="date" id="dlTo" value="1985-12-31" min="1940-01-01">
+          <div class="date-echo" id="dlToEcho"></div>
         </div>
       </div>
       <div class="pill-label">Resolution</div>
@@ -624,9 +630,26 @@
     buildPills('hvPills', HV_DEFAULTS);
     buildPills('dlPills', DL_DEFAULTS);
 
+    // <input type="date"> is rendered and parsed in the BROWSER's locale, not
+    // the page's: an English browser shows mm/dd/yyyy, so "03/08/2026" typed as
+    // 3 August is silently read as 8 March — a wrong-but-plausible export. Echo
+    // every chosen date in an unambiguous form so a swap is visible up front.
+    const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function echoDate(input) {
+      const el = document.getElementById(input.id + 'Echo');
+      if (!el) return;
+      const v = input.value;
+      if (!DATE_RE.test(v)) { el.textContent = ''; return; }
+      const [y, m, d] = v.split('-').map(Number);
+      el.textContent = `${v} · ${d} ${MONTH_NAMES[m - 1]} ${y}`;
+    }
+
     document.querySelectorAll('input[type="date"]').forEach(i => {
       i.min = MIN_DATE;
       i.max = TODAY;
+      i.addEventListener('input', () => echoDate(i));
+      i.addEventListener('change', () => echoDate(i));
+      echoDate(i);
     });
 
     // ---------- global units ----------
@@ -1083,7 +1106,19 @@
         URL.revokeObjectURL(a.href);
 
         const kb = Math.max(1, Math.round(blob.size / 1024));
-        out.innerHTML = `<div class="ok-box">✅ Downloaded: ${rows.length.toLocaleString()} rows, ${esc(fname + '.' + format)} (${kb.toLocaleString()} KB)</div>`;
+        // Restate the range actually exported — the second place a mistyped
+        // date shows up, after the echo under the inputs.
+        let h = `<div class="ok-box">✅ Downloaded: ${rows.length.toLocaleString()} rows · ` +
+                `${esc(rows[0][0])} → ${esc(rows[rows.length - 1][0])} · ` +
+                `${esc(fname + '.' + format)} (${kb.toLocaleString()} KB)</div>`;
+        // Archive data lags ~5 days, so a range ending near today can finish on
+        // valueless rows; flag them instead of letting them pass as data.
+        let empty = 0;
+        while (empty < rows.length && rows[rows.length - 1 - empty].slice(1).every(v => v === null)) empty++;
+        if (empty) {
+          h += `<div class="info-box">ℹ️ The last ${empty.toLocaleString()} row(s) have no values yet — archive data lags ~5 days.</div>`;
+        }
+        out.innerHTML = h;
       } catch (err) {
         out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
       }
