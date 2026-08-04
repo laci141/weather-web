@@ -281,6 +281,10 @@
     .date-parts input:focus, .date-parts select:focus {
       outline: none; border-color: rgba(59, 130, 246, 0.6);
     }
+    /* The open dropdown is drawn by the platform, which supplies its own sheet
+       colour — inheriting only the white text left the options invisible on
+       Android. Pin both halves of the pair on the options themselves. */
+    .date-parts select option { background: #16203a; color: #ffffff; }
     .date-parts input.bad { border-color: rgba(239, 68, 68, 0.7); }
 
     /* QUICK RANGE PRESETS */
