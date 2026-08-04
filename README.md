@@ -7,8 +7,9 @@ Historical weather viewer + data downloader for Open-Meteo (daily/hourly/3-hour/
 - **Current Weather**: Live conditions plus a 7-day outlook, exportable
 - **Historical View**: 1940–today, max 5 weeks display, weekly charts + tables, exportable on the spot (including all charts as one PNG)
 - **Data Downloader**: Any date range (1940–today), multiple resolutions, XLSX/CSV/JSON/Markdown export
-- **Climate Anomaly**: Any year's monthly means against the 1991–2020 WMO normal, with a warm/cool chart
-- **Climate Trends**: Temperature or precipitation year by year over the last 10–80 years (or 1940→today), each year against the 1991–2020 normal, with a fitted trend line
+- **Climate Anomaly**: Any year against any reference period, month by month — temperature *and* precipitation in separate tables, each with its own chart and export
+- **Climate Trends**: Temperature or precipitation year by year over the last 10–80 years (or 1940→today), with a fitted trend line
+- **Reference period**: Defaults to 1991–2020 (the WMO normal) but freely settable — 1961–1990, 1981–2010, single decades, or any span of 5+ years
 - **Keyless**: No API key anywhere — Open-Meteo is free and keyless for non-commercial use
 - **Date entry**: Explicit Year / Month / Day controls — no OS calendar on mobile, and the month can never be read as the day
 - **Quick ranges**: Last 30 days, this year, last year, 1940 → today
@@ -34,7 +35,14 @@ rather than buried:
 
 Incomplete years — the current one, and 1940 where the archive starts mid-record
 — are excluded from trends and baselines, so a part-year cannot pose as a dry or
-cool one.
+cool one. The same rule applies per month in the Anomaly panel: a month needs 90%
+of its days before it is comparable.
+
+Precipitation is aggregated as a **total** and temperature as a **mean**, at
+every level. A baseline January for rainfall is therefore the average January
+*total* across the reference years, not the average rainy day — and the yearly
+precipitation headline is the difference between annual totals, reported in mm
+and as a percentage of normal.
 
 ### Markdown export
 

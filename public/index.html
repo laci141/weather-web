@@ -573,13 +573,13 @@
       <div class="bento-card glass amber" onclick="openModal('anomModal')">
         <div class="bento-icon">🌡️</div>
         <h3>Climate Anomaly</h3>
-        <p>How much warmer or cooler was a year than the 1991–2020 normal? Month by month, back to 1940.</p>
+        <p>How much warmer, cooler, wetter or drier was a year than a reference period you pick? Month by month, back to 1940.</p>
         <button class="card-btn">Open</button>
       </div>
       <div class="bento-card glass teal wide" onclick="openModal('trendModal')">
         <div class="bento-icon">📊</div>
         <h3>Climate Trends</h3>
-        <p>Temperature or precipitation, year by year, over the last 10 to 80 years — each year against the 1991–2020 normal, with the trend line.</p>
+        <p>Temperature or precipitation, year by year, over the last 10 to 80 years — each year against a reference period you pick, with the trend line.</p>
         <button class="card-btn">Open</button>
       </div>
     </div>
@@ -703,8 +703,9 @@
       <button class="modal-close" onclick="closeModal('anomModal')">×</button>
       <h2>🌡️ Climate Anomaly</h2>
       <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
-        Compares a year's monthly mean temperature against the 1991–2020 climate normal —
-        the 30-year reference period used by the WMO.
+        Compares one year against a reference period, month by month — temperature and
+        precipitation in separate tables. The default reference is 1991–2020, the WMO's
+        current 30-year normal, but any period from 1940 on works.
       </p>
       <div class="form-row">
         <div class="form-group">
@@ -716,7 +717,9 @@
           <input type="number" id="anYear" min="1940" step="1" inputmode="numeric" placeholder="e.g. 2024">
         </div>
       </div>
-      <button class="btn btn-amber" id="anBtn" onclick="runAnomaly()">Compare to normal</button>
+      <div class="pill-label">Reference period <span style="color:#64748b">(what each month is measured against)</span></div>
+      <div id="anBaseline"></div>
+      <button class="btn btn-amber" id="anBtn" onclick="runAnomaly()">Compare</button>
       <div id="anResult"></div>
     </div>
   </div>
@@ -727,7 +730,7 @@
       <button class="modal-close" onclick="closeModal('trendModal')">×</button>
       <h2>📊 Climate Trends</h2>
       <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
-        One bar per year, each measured against the 1991–2020 normal, with a fitted trend line.
+        One bar per year, each measured against the reference period below, with a fitted trend line.
         Incomplete years are left out so a part-year cannot masquerade as a dry or cool one.
       </p>
       <div class="form-group">
@@ -741,6 +744,8 @@
       </div>
       <div class="pill-label">Period</div>
       <div class="pill-grid" id="trPeriod"></div>
+      <div class="pill-label">Reference period <span style="color:#64748b">(what each year is measured against)</span></div>
+      <div id="trBaseline"></div>
       <button class="btn btn-teal" id="trBtn" onclick="runTrend()">Show trend</button>
       <div id="trResult"></div>
     </div>
@@ -1653,62 +1658,258 @@
     }
 
     // ---------- CLIMATE ANOMALY ----------
-    // A year's monthly mean temperature against the 1991–2020 normal, the WMO's
-    // current 30-year reference period. Both series come from the same archive
-    // with the same unit setting, so the anomaly is a plain subtraction and
-    // stays correct in °C or °F (a difference of two °F values is in °F).
-    const BASE_FROM = '1991-01-01';
-    const BASE_TO = '2020-12-31';
-    let anomChart = null;
+    // One year measured against a reference period, month by month, for
+    // temperature and precipitation side by side. The reference defaults to
+    // 1991–2020 — the WMO's current 30-year normal, which is what national
+    // weather services publish against — but any period from 1940 on can be
+    // used, because the interesting question is often "compared to when?".
+    //
+    // Both variables come from one request under the same unit setting, so each
+    // anomaly is a plain subtraction and stays correct in °C or °F (the
+    // difference of two °F values is itself in °F).
+    let anomCharts = [];
     let lastAnomaly = null;
-
-    // mean of the daily means for each calendar month, over whatever years the
-    // series covers; months with no readings stay null rather than becoming 0
-    function monthlyMeans(times, values) {
-      const acc = Array.from({ length: 12 }, () => ({ sum: 0, n: 0 }));
-      times.forEach((t, i) => {
-        const v = values[i];
-        if (v === null || v === undefined || !Number.isFinite(Number(v))) return;
-        const m = Number(t.slice(5, 7)) - 1;
-        acc[m].sum += Number(v);
-        acc[m].n++;
-      });
-      return acc.map(a => (a.n ? a.sum / a.n : null));
-    }
 
     const signed = (v) => (v > 0 ? '+' : '') + (Math.round(v * 10) / 10);
     const round1 = (v) => (v === null || v === undefined ? null : Math.round(v * 10) / 10);
 
-    function exportAnomaly(format) {
-      const msg = document.getElementById('anExportMsg');
+    // --- reference period picker (shared by the Anomaly and Trends panels) ---
+    const BASELINE_PRESETS = [
+      ['1991–2020 (WMO)', 1991, 2020],
+      ['1981–2010', 1981, 2010],
+      ['1971–2000', 1971, 2000],
+      ['1961–1990', 1961, 1990],
+      ['1980s', 1981, 1990],
+      ['1990s', 1991, 2000],
+      ['2000s', 2001, 2010],
+      ['2010s', 2011, 2020]
+    ];
+
+    function baselineRange(id) {
+      return {
+        from: parseInt(document.getElementById(id + '_from').value, 10),
+        to: parseInt(document.getElementById(id + '_to').value, 10)
+      };
+    }
+
+    function renderBaselineEcho(id) {
+      const el = document.getElementById(id + 'Echo');
+      const { from, to } = baselineRange(id);
+      if (!Number.isFinite(from) || !Number.isFinite(to) || to < from) { el.textContent = ''; return; }
+      const n = to - from + 1;
+      el.textContent = `${from}–${to} · ${n} year${n === 1 ? '' : 's'}` +
+        (n < 20 ? ' — shorter than a 30-year normal, so one unusual decade can shift it' : '');
+    }
+
+    function buildBaselinePicker(id, from, to) {
+      const host = document.getElementById(id);
+      host.innerHTML =
+        '<div class="preset-row">' +
+        BASELINE_PRESETS.map((p, i) => `<button type="button" class="preset-btn" data-i="${i}">${p[0]}</button>`).join('') +
+        '</div><div class="date-parts" style="grid-template-columns:1fr 1fr">' +
+          `<div class="dp-cell"><label for="${id}_from">Baseline from</label>` +
+          `<input type="number" id="${id}_from" inputmode="numeric" min="1940" max="${THIS_YEAR}"></div>` +
+          `<div class="dp-cell"><label for="${id}_to">Baseline to</label>` +
+          `<input type="number" id="${id}_to" inputmode="numeric" min="1940" max="${THIS_YEAR}"></div>` +
+        `</div><div class="date-echo" id="${id}Echo"></div>`;
+      const f = document.getElementById(id + '_from');
+      const t = document.getElementById(id + '_to');
+      f.value = String(from);
+      t.value = String(to);
+      const refresh = () => { renderBaselineEcho(id); saveSettings(); };
+      f.addEventListener('input', refresh);
+      t.addEventListener('input', refresh);
+      host.querySelector('.preset-row').addEventListener('click', (e) => {
+        const b = e.target.closest('.preset-btn');
+        if (!b) return;
+        const p = BASELINE_PRESETS[Number(b.dataset.i)];
+        f.value = String(p[1]);
+        t.value = String(p[2]);
+        refresh();
+      });
+      refresh();
+    }
+    buildBaselinePicker('anBaseline', 1991, 2020);
+    buildBaselinePicker('trBaseline', 1991, 2020);
+
+    // Rejects a reference period that cannot support an average; returns an
+    // error string or null.
+    function baselineProblem(from, to) {
+      if (!Number.isFinite(from) || !Number.isFinite(to)) return 'Enter both reference years.';
+      if (from < 1940 || to > THIS_YEAR) return `The reference period must fall between 1940 and ${THIS_YEAR}.`;
+      if (to < from) return 'The reference period ends before it starts.';
+      if (to - from + 1 < 5) return 'Use a reference period of at least 5 years — anything shorter is mostly noise.';
+      return null;
+    }
+
+    // --- monthly aggregation ---
+    // Keyed "YYYY-MM", so any month of any year in the span can be looked up.
+    function monthlyStats(times, values) {
+      const m = new Map();
+      times.forEach((t, i) => {
+        const v = values[i];
+        if (v === null || v === undefined || !Number.isFinite(Number(v))) return;
+        const key = t.slice(0, 7);
+        let g = m.get(key);
+        if (!g) m.set(key, g = { n: 0, sum: 0 });
+        g.n++;
+        g.sum += Number(v);
+      });
+      return m;
+    }
+
+    // A month needs near-full coverage before it can be compared: a part-month
+    // rainfall total reads as a drought, and a part-month mean is biased toward
+    // whichever days it happens to contain.
+    function monthStat(stats, y, mIdx) {
+      const g = stats.get(`${y}-${pad2(mIdx + 1)}`);
+      return g && g.n >= Math.floor(daysInMonth(y, mIdx + 1) * 0.9) ? g : null;
+    }
+
+    const statValue = (g, isMean) => (isMean ? g.sum / g.n : g.sum);
+
+    function monthlySeries(stats, year, isMean) {
+      return Array.from({ length: 12 }, (_, m) => {
+        const g = monthStat(stats, year, m);
+        return g ? statValue(g, isMean) : null;
+      });
+    }
+
+    // The baseline for a month is that calendar month averaged over the
+    // reference years — for rainfall, the average January *total*, not the
+    // average rainy day.
+    function baselineSeries(stats, from, to, isMean) {
+      return Array.from({ length: 12 }, (_, m) => {
+        const vals = [];
+        for (let y = from; y <= to; y++) {
+          const g = monthStat(stats, y, m);
+          if (g) vals.push(statValue(g, isMean));
+        }
+        return vals.length >= 5 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+      });
+    }
+
+    function exportAnomaly(kind, format) {
+      const msg = document.getElementById('anExportMsg_' + kind);
       if (!lastAnomaly || !msg) return;
-      const { city, loc, year, baseM, targM, anom, sym, months } = lastAnomaly;
-      const header = ['Month', `${year} mean ${sym}`, `1991-2020 normal ${sym}`, `Anomaly ${sym}`];
-      const rows = MONTH_FULL.map((name, i) => [name, round1(targM[i]), round1(baseM[i]), round1(anom[i])]);
-      const fname = `anomaly_${safeName(city)}_${year}_vs_1991-2020.${format}`;
+      const { city, loc, year, baseFrom, baseTo } = lastAnomaly;
+      const v = lastAnomaly[kind];
+      const header = ['Month', `${year} ${v.isMean ? 'mean' : 'total'} ${v.unit}`,
+                      `${baseFrom}-${baseTo} normal ${v.unit}`, `Anomaly ${v.unit}`, '% of normal'];
+      const rows = MONTH_FULL.map((name, i) =>
+        [name, round1(v.target[i]), round1(v.base[i]), round1(v.anom[i]), round1(v.pct[i])]);
+      const fname = `anomaly_${safeName(city)}_${v.label.toLowerCase()}_${year}_vs_${baseFrom}-${baseTo}.${format}`;
       try {
         const md = () => {
           const L = [];
-          L.push(`# Climate anomaly — ${loc.name}${loc.country_code ? ', ' + loc.country_code : ''}`, '');
+          L.push(`# ${v.label} anomaly — ${loc.name}${loc.country_code ? ', ' + loc.country_code : ''}`, '');
           L.push('| | |', '|---|---|');
           L.push(`| Coordinates | ${loc.latitude}, ${loc.longitude} |`);
           L.push(`| Year compared | ${year} |`);
-          L.push(`| Baseline | ${BASE_FROM} → ${BASE_TO} (WMO 30-year normal) |`);
-          L.push(`| Months with data | ${months} of 12 |`);
-          L.push(`| Unit | ${sym} |`);
+          L.push(`| Reference period | ${baseFrom}–${baseTo} (${baseTo - baseFrom + 1} years) |`);
+          L.push(`| Variable | ${v.label} — monthly ${v.isMean ? 'mean' : 'total'} |`);
+          L.push(`| Comparable months | ${v.have.length} of 12 |`);
+          L.push(`| Unit | ${v.unit} |`);
           L.push('| Source | Open-Meteo archive (ERA5) |');
           L.push(`| Generated | ${TODAY} |`, '');
-          L.push(`| ${header.join(' | ')} |`, `|---|---:|---:|---:|`);
-          rows.forEach(r => L.push(`| ${r.map(v => (v === null ? '—' : v)).join(' | ')} |`));
+          L.push(`| ${header.join(' | ')} |`, '|---|---:|---:|---:|---:|');
+          rows.forEach(r => L.push(`| ${r.map(x => (x === null ? '—' : x)).join(' | ')} |`));
           return L.join('\n');
         };
-        const blob = serializeTable(header, rows, format, md, { city, year, baseline: [BASE_FROM, BASE_TO], unit: sym, months: rows });
+        const blob = serializeTable(header, rows, format, md,
+          { city, year, reference: [baseFrom, baseTo], variable: v.label, unit: v.unit, months: rows });
         downloadBlob(blob, fname);
         const kb = Math.max(1, Math.round(blob.size / 1024));
         msg.innerHTML = `<div class="ok-box">✅ Downloaded: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
       } catch (err) {
         msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
       }
+    }
+
+    function anomalySection(kind, v, year, baseFrom, baseTo) {
+      let h = `<div class="week-block"><div class="week-head">${v.isMean ? '🌡️' : '🌧️'} ${esc(v.label)}</div>`;
+      if (!v.have.length) {
+        return h + `<div class="info-box">ℹ️ No month of ${esc(year)} can be compared for ` +
+               `${esc(v.label.toLowerCase())} — not enough overlapping data in ${esc(baseFrom)}–${esc(baseTo)}.</div></div>`;
+      }
+
+      // Temperature's yearly figure is the mean of the monthly anomalies;
+      // rainfall's is the difference between the annual totals, which is what a
+      // wet or dry year actually means.
+      let headText, cls, word, sub;
+      if (v.isMean) {
+        const mean = v.have.reduce((a, b) => a + b, 0) / v.have.length;
+        headText = `${signed(mean)} ${v.unit}`;
+        cls = mean >= 0 ? 'warm' : 'cool';
+        word = mean >= 0 ? 'warmer' : 'cooler';
+        sub = `mean of ${v.have.length} monthly anomal${v.have.length === 1 ? 'y' : 'ies'}`;
+      } else {
+        let tSum = 0, bSum = 0;
+        v.target.forEach((t, i) => { if (t !== null && v.base[i] !== null) { tSum += t; bSum += v.base[i]; } });
+        const diff = tSum - bSum;
+        const pct = bSum ? (diff / bSum) * 100 : 0;
+        headText = `${signed(diff)} ${v.unit} (${signed(pct)}%)`;
+        cls = diff >= 0 ? 'wet' : 'dry';
+        word = diff >= 0 ? 'wetter' : 'drier';
+        sub = `${round1(tSum)} ${v.unit} against a ${round1(bSum)} ${v.unit} normal, ` +
+              `over ${v.have.length} comparable month${v.have.length === 1 ? '' : 's'}`;
+      }
+
+      h += `<div class="anom-head ${cls}">${esc(headText)}</div>`;
+      h += `<div class="anom-sub">${esc(year)} was ${word} than the ${esc(baseFrom)}–${esc(baseTo)} reference — ${esc(sub)}.</div>`;
+      h += `<div class="chart-wrap"><canvas id="anomCanvas_${kind}"></canvas></div>`;
+      h += '<div class="table-wrap"><table><tr><th>Month</th>' +
+           `<th>${esc(year)} ${v.isMean ? 'mean' : 'total'} ${esc(v.unit)}</th>` +
+           `<th>${esc(baseFrom)}–${esc(baseTo)} ${esc(v.unit)}</th>` +
+           `<th>Anomaly ${esc(v.unit)}</th><th>% of normal</th></tr>`;
+      MONTH_FULL.forEach((name, i) => {
+        const a = v.anom[i];
+        const c = a === null ? '' : v.isMean ? (a >= 0 ? 'warm' : 'cool') : (a >= 0 ? 'wet' : 'dry');
+        h += `<tr><td>${esc(name)}</td>` +
+             `<td>${v.target[i] === null ? '—' : esc(round1(v.target[i]))}</td>` +
+             `<td>${v.base[i] === null ? '—' : esc(round1(v.base[i]))}</td>` +
+             `<td class="${c}">${a === null ? '—' : esc(signed(a))}</td>` +
+             `<td class="${c}">${v.pct[i] === null ? '—' : esc(signed(v.pct[i])) + '%'}</td></tr>`;
+      });
+      h += '</table></div>';
+      h += '<div class="dl-row" style="margin-top:12px">' +
+           `<button class="btn btn-amber" style="width:auto" onclick="exportAnomaly('${kind}','xlsx')">📥 XLSX</button>` +
+           `<button class="btn btn-gray" onclick="exportAnomaly('${kind}','csv')">📄 CSV</button>` +
+           `<button class="btn btn-gray" onclick="exportAnomaly('${kind}','json')">🧾 JSON</button>` +
+           `<button class="btn btn-gray" onclick="exportAnomaly('${kind}','md')">📝 MD</button>` +
+           `</div><div id="anExportMsg_${kind}"></div>`;
+      return h + '</div>';
+    }
+
+    function drawAnomalyChart(kind, v, year, baseFrom, baseTo) {
+      const ctx = document.getElementById('anomCanvas_' + kind);
+      if (!ctx || typeof Chart === 'undefined') return;
+      const pos = v.isMean ? '#ef4444' : '#06b6d4';
+      const neg = v.isMean ? '#3b82f6' : '#b45309';
+      anomCharts.push(new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: MONTH_NAMES,
+          datasets: [{
+            label: `${year} vs ${baseFrom}–${baseTo} (${v.unit})`,
+            data: v.anom,
+            backgroundColor: v.anom.map(x => (x === null ? '#334155' : x >= 0 ? pos : neg))
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { labels: { color: '#e0e0e0', boxWidth: 14, font: { size: 11 } } } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0' } },
+            y: {
+              grid: { color: 'rgba(255,255,255,0.08)' },
+              ticks: { color: '#a0aec0' },
+              title: { display: true, text: 'Anomaly ' + v.unit, color: '#a0aec0' }
+            }
+          }
+        }
+      }));
     }
 
     async function runAnomaly() {
@@ -1722,89 +1923,55 @@
         out.innerHTML = `<div class="error-box">Pick a year between 1940 and ${THIS_YEAR}.</div>`;
         return;
       }
+      const { from: baseFrom, to: baseTo } = baselineRange('anBaseline');
+      const problem = baselineProblem(baseFrom, baseTo);
+      if (problem) { out.innerHTML = `<div class="error-box">${esc(problem)}</div>`; return; }
 
       out.innerHTML = '<div class="spinner"></div><p style="text-align:center;color:#94a3b8;font-size:0.85rem">' +
-                      'Loading 30 years of baseline data — this takes a few seconds…</p>';
+                      `Loading ${esc(baseFrom)}–${esc(baseTo)} as the reference — this takes a few seconds…</p>`;
       btn.disabled = true;
       try {
         const loc = await geocode(city);
-        const ask = (start, end) => postJSON('/api/history-daily', {
+        // One request spans the reference period and the compared year together.
+        const startIso = isoOf(Math.min(year, baseFrom), 1, 1);
+        let endIso = isoOf(Math.max(year, baseTo), 12, 31);
+        if (endIso > TODAY) endIso = TODAY;
+        const d = await postJSON('/api/history-daily', {
           latitude: loc.latitude, longitude: loc.longitude,
-          start_date: start, end_date: end,
-          fields: ['temperature_2m_mean'], units: unitsBody()
+          start_date: startIso, end_date: endIso,
+          fields: ['temperature_2m_mean', 'precipitation_sum'], units: unitsBody()
         });
-        // The current year has no December yet, so it stops at today.
-        const yearEnd = year === THIS_YEAR ? TODAY : isoOf(year, 12, 31);
-        const [base, target] = await Promise.all([ask(BASE_FROM, BASE_TO), ask(isoOf(year, 1, 1), yearEnd)]);
+        const times = (d.daily || {}).time || [];
+        if (!times.length) throw new Error('No archive data for this location.');
 
-        const bTimes = (base.daily || {}).time || [];
-        const tTimes = (target.daily || {}).time || [];
-        if (!bTimes.length) throw new Error('No baseline data for this location.');
-        if (!tTimes.length) throw new Error(`No archive data for ${year} at this location.`);
+        const build = (field, isMean, unit, label) => {
+          const stats = monthlyStats(times, (d.daily || {})[field] || []);
+          const target = monthlySeries(stats, year, isMean);
+          const base = baselineSeries(stats, baseFrom, baseTo, isMean);
+          const anom = target.map((t, i) => (t === null || base[i] === null ? null : t - base[i]));
+          const pct = target.map((t, i) => (t === null || !base[i] ? null : (t / base[i] - 1) * 100));
+          return { isMean, unit, label, target, base, anom, pct, have: anom.filter(x => x !== null) };
+        };
+        const temp = build('temperature_2m_mean', true, tempSym(), 'Temperature');
+        const precip = build('precipitation_sum', false, precSym(), 'Precipitation');
+        if (!temp.have.length && !precip.have.length) {
+          throw new Error(`No month of ${year} overlaps the ${baseFrom}–${baseTo} reference period.`);
+        }
 
-        const baseM = monthlyMeans(bTimes, base.daily.temperature_2m_mean || []);
-        const targM = monthlyMeans(tTimes, target.daily.temperature_2m_mean || []);
-        const anom = targM.map((v, i) => (v === null || baseM[i] === null ? null : v - baseM[i]));
-        const have = anom.filter(v => v !== null);
-        if (!have.length) throw new Error(`No month of ${year} overlaps the baseline yet.`);
-        const yearAnom = have.reduce((a, b) => a + b, 0) / have.length;
-        const sym = tempSym();
-
-        if (anomChart) { anomChart.destroy(); anomChart = null; }
-        lastAnomaly = { city, loc, year, baseM, targM, anom, sym, months: have.length };
+        anomCharts.forEach(c => c.destroy());
+        anomCharts = [];
+        lastAnomaly = { city, loc, year, baseFrom, baseTo, temp, precip };
 
         let h = `<div class="loc-header">${esc(loc.name)}, ${esc(loc.country_code || '')}</div>`;
-        h += `<div class="loc-sub">${esc(target.latitude)}, ${esc(target.longitude)} · ${esc(target.timezone || '')} · ` +
-             `baseline ${BASE_FROM} → ${BASE_TO}</div>`;
-        h += `<div class="anom-head ${yearAnom >= 0 ? 'warm' : 'cool'}">${esc(signed(yearAnom))} ${esc(sym)}</div>`;
-        h += `<div class="anom-sub">${esc(year)} was ${yearAnom >= 0 ? 'warmer' : 'cooler'} than the 1991–2020 normal — ` +
-             `mean of ${have.length} monthly anomal${have.length === 1 ? 'y' : 'ies'}.</div>`;
-        h += '<div class="chart-wrap"><canvas id="anomCanvas"></canvas></div>';
-        h += '<div class="table-wrap"><table><tr><th>Month</th>' +
-             `<th>${esc(year)} mean ${esc(sym)}</th><th>1991–2020 ${esc(sym)}</th><th>Anomaly ${esc(sym)}</th></tr>`;
-        MONTH_FULL.forEach((name, i) => {
-          const a = anom[i];
-          h += `<tr><td>${esc(name)}</td>` +
-               `<td>${targM[i] === null ? '—' : esc(round1(targM[i]))}</td>` +
-               `<td>${baseM[i] === null ? '—' : esc(round1(baseM[i]))}</td>` +
-               `<td class="${a === null ? '' : a >= 0 ? 'warm' : 'cool'}">${a === null ? '—' : esc(signed(a))}</td></tr>`;
-        });
-        h += '</table></div>';
-        h += '<div class="dl-row" style="margin-top:14px">' +
-             '<button class="btn btn-amber" style="width:auto" onclick="exportAnomaly(\'xlsx\')">📥 XLSX</button>' +
-             '<button class="btn btn-gray" onclick="exportAnomaly(\'csv\')">📄 CSV</button>' +
-             '<button class="btn btn-gray" onclick="exportAnomaly(\'json\')">🧾 JSON</button>' +
-             '<button class="btn btn-gray" onclick="exportAnomaly(\'md\')">📝 MD</button>' +
-             '</div><div id="anExportMsg"></div>';
+        h += `<div class="loc-sub">${esc(d.latitude)}, ${esc(d.longitude)} · ${esc(d.timezone || '')} · ` +
+             `reference ${esc(baseFrom)}–${esc(baseTo)} (${esc(baseTo - baseFrom + 1)} years)</div>`;
+        h += anomalySection('temp', temp, year, baseFrom, baseTo);
+        h += anomalySection('precip', precip, year, baseFrom, baseTo);
+        h += TREND_NOTE;
         out.innerHTML = h;
 
-        const ctx = document.getElementById('anomCanvas');
-        if (ctx && typeof Chart !== 'undefined') {
-          anomChart = new Chart(ctx, {
-            type: 'bar',
-            data: {
-              labels: MONTH_NAMES,
-              datasets: [{
-                label: `${year} vs 1991–2020 (${sym})`,
-                data: anom,
-                backgroundColor: anom.map(v => (v === null ? '#334155' : v >= 0 ? '#ef4444' : '#3b82f6'))
-              }]
-            },
-            options: {
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: { legend: { labels: { color: '#e0e0e0', boxWidth: 14, font: { size: 11 } } } },
-              scales: {
-                x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0' } },
-                y: {
-                  grid: { color: 'rgba(255,255,255,0.08)' },
-                  ticks: { color: '#a0aec0' },
-                  title: { display: true, text: 'Anomaly ' + sym, color: '#a0aec0' }
-                }
-              }
-            }
-          });
-        }
+        drawAnomalyChart('temp', temp, year, baseFrom, baseTo);
+        drawAnomalyChart('precip', precip, year, baseFrom, baseTo);
       } catch (err) {
         out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
       } finally {
@@ -1813,7 +1980,7 @@
     }
 
     // ---------- CLIMATE TRENDS ----------
-    // Year-by-year anomalies against the same 1991–2020 normal the Anomaly panel
+    // Year-by-year anomalies against the same reference period the Anomaly panel
     // uses, over a chosen span. Temperature is a yearly mean, precipitation a
     // yearly total — so precipitation also gets a percent-of-normal column,
     // because 40 mm means one thing in a wet year and another in a dry one.
@@ -1888,12 +2055,12 @@
     function exportTrend(format) {
       const msg = document.getElementById('trExportMsg');
       if (!lastTrend || !msg) return;
-      const { city, loc, years, values, anoms, pcts, unit, isTemp, baseline, startYear, skipped } = lastTrend;
+      const { city, loc, years, values, anoms, pcts, unit, isTemp, baseline, startYear, skipped, baseFrom, baseTo } = lastTrend;
       const header = ['Year', `${isTemp ? 'Annual mean' : 'Annual total'} ${unit}`, `Anomaly ${unit}`]
         .concat(isTemp ? [] : ['% of normal']);
       const rows = years.map((y, i) => [y, round1(values[i]), round1(anoms[i])]
         .concat(isTemp ? [] : [round1(pcts[i])]));
-      const fname = `trend_${safeName(city)}_${isTemp ? 'temperature' : 'precipitation'}_${startYear}-${THIS_YEAR}.${format}`;
+      const fname = `trend_${safeName(city)}_${isTemp ? 'temperature' : 'precipitation'}_${startYear}-${THIS_YEAR}_vs_${baseFrom}-${baseTo}.${format}`;
       try {
         const md = () => {
           const L = [];
@@ -1904,7 +2071,7 @@
           L.push(`| Period | ${startYear} → ${THIS_YEAR} |`);
           L.push(`| Complete years used | ${years.length} |`);
           if (skipped.length) L.push(`| Years skipped (incomplete) | ${skipped.join(', ')} |`);
-          L.push(`| Baseline | 1991–2020 normal = ${round1(baseline)} ${unit} |`);
+          L.push(`| Reference period | ${baseFrom}–${baseTo} average = ${round1(baseline)} ${unit} |`);
           L.push(`| Unit | ${unit} |`);
           L.push('| Source | Open-Meteo archive (ERA5) |');
           L.push(`| Generated | ${TODAY} |`, '');
@@ -1936,15 +2103,19 @@
       const field = isTemp ? 'temperature_2m_mean' : 'precipitation_sum';
       const unit = isTemp ? tempSym() : precSym();
 
+      const { from: baseFrom, to: baseTo } = baselineRange('trBaseline');
+      const problem = baselineProblem(baseFrom, baseTo);
+      if (problem) { out.innerHTML = `<div class="error-box">${esc(problem)}</div>`; return; }
+
       out.innerHTML = '<div class="spinner"></div><p style="text-align:center;color:#94a3b8;font-size:0.85rem">' +
-                      `Loading daily data from ${Math.min(startYear, 1991)} — this can take a few seconds…</p>`;
+                      `Loading daily data from ${Math.min(startYear, baseFrom)} — this can take a few seconds…</p>`;
       btn.disabled = true;
       try {
         const loc = await geocode(city);
-        // One request covers both the chosen span and the 1991–2020 baseline.
+        // One request covers both the chosen span and the reference period.
         const d = await postJSON('/api/history-daily', {
           latitude: loc.latitude, longitude: loc.longitude,
-          start_date: isoOf(Math.min(startYear, 1991), 1, 1), end_date: TODAY,
+          start_date: isoOf(Math.min(startYear, baseFrom), 1, 1), end_date: TODAY,
           fields: [field], units: unitsBody()
         });
         const times = (d.daily || {}).time || [];
@@ -1969,8 +2140,11 @@
         const complete = (y) => { const g = byYear.get(y); return !!g && g.n >= 360; };
 
         const baseYears = [];
-        for (let y = 1991; y <= 2020; y++) if (complete(y)) baseYears.push(y);
-        if (baseYears.length < 25) throw new Error('Not enough 1991–2020 data here to form a baseline.');
+        for (let y = baseFrom; y <= baseTo; y++) if (complete(y)) baseYears.push(y);
+        // require most of the reference period to actually carry data
+        if (baseYears.length < Math.max(4, Math.ceil((baseTo - baseFrom + 1) * 0.8))) {
+          throw new Error(`Not enough ${baseFrom}–${baseTo} data here to form a reference average.`);
+        }
         const baseline = baseYears.reduce((a, y) => a + yearValue(byYear.get(y)), 0) / baseYears.length;
 
         const years = [], skipped = [];
@@ -1984,7 +2158,7 @@
         const totalChange = fit.slope * (years[years.length - 1] - years[0]);
 
         if (trendChart) { trendChart.destroy(); trendChart = null; }
-        lastTrend = { city, loc, years, values, anoms, pcts, unit, isTemp, baseline, startYear, skipped };
+        lastTrend = { city, loc, years, values, anoms, pcts, unit, isTemp, baseline, startYear, skipped, baseFrom, baseTo };
 
         const up = totalChange >= 0;
         const headClass = isTemp ? (up ? 'warm' : 'cool') : (up ? 'wet' : 'dry');
@@ -1992,7 +2166,7 @@
 
         let h = `<div class="loc-header">${esc(loc.name)}, ${esc(loc.country_code || '')}</div>`;
         h += `<div class="loc-sub">${esc(d.latitude)}, ${esc(d.longitude)} · ${esc(d.timezone || '')} · ` +
-             `1991–2020 normal = ${esc(round1(baseline))} ${esc(unit)}</div>`;
+             `${esc(baseFrom)}–${esc(baseTo)} average = ${esc(round1(baseline))} ${esc(unit)}</div>`;
         h += `<div class="anom-head ${headClass}">${esc(signed(totalChange))} ${esc(unit)}</div>`;
         h += `<div class="anom-sub">${esc(years[0])}–${esc(years[years.length - 1])} — ` +
              `${esc(years.length)} complete years, trending ${word} by ` +
@@ -2033,7 +2207,7 @@
               labels: years.map(String),
               datasets: [
                 {
-                  label: `Anomaly vs 1991–2020 (${unit})`,
+                  label: `Anomaly vs ${baseFrom}–${baseTo} (${unit})`,
                   data: anoms,
                   // pre-satellite bars are drawn faded, matching the * in the table
                   backgroundColor: anoms.map((v, i) => solid(v) + (years[i] < SATELLITE_ERA ? '66' : ''))
@@ -2095,6 +2269,7 @@
           year: inputVal('anYear'),
           units: { ...UNITS },
           res: Object.fromEntries(RADIO_SETS.map(([key, id]) => [key, checkedRes(id)])),
+          baselines: Object.fromEntries(['anBaseline', 'trBaseline'].map(id => [id, baselineRange(id)])),
           fields: { hv: checkedKeys('hvPills'), dl: checkedKeys('dlPills') },
           dates: {
             hvFrom: dateValue('hvFrom'), hvTo: dateValue('hvTo'),
@@ -2140,6 +2315,16 @@
           p.classList.toggle('on', on);
           p.querySelector('input').checked = on;
         });
+      });
+
+      if (s.baselines) Object.keys(s.baselines).forEach(id => {
+        const b = s.baselines[id];
+        const f = document.getElementById(id + '_from');
+        const t = document.getElementById(id + '_to');
+        if (!f || !t || !b || !Number.isFinite(b.from) || !Number.isFinite(b.to)) return;
+        f.value = String(b.from);
+        t.value = String(b.to);
+        renderBaselineEcho(id);
       });
 
       if (s.dates) Object.keys(s.dates).forEach(id => {
