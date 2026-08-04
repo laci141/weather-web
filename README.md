@@ -4,11 +4,26 @@ Historical weather viewer + data downloader for Open-Meteo (daily/hourly/3-hour/
 
 ## Features
 
-- **Current Weather**: Real-time forecast (Oradea, Budapest, any city worldwide)
-- **Historical View**: 1940–today, max 5 weeks display, split into weekly charts + tables
-- **Data Downloader**: Any date range (1940–today), multiple resolutions, XLSX/CSV/JSON export
+- **Current Weather**: Live conditions plus a 7-day outlook, exportable
+- **Historical View**: 1940–today, max 5 weeks display, weekly charts + tables, exportable on the spot (including all charts as one PNG)
+- **Data Downloader**: Any date range (1940–today), multiple resolutions, XLSX/CSV/JSON/Markdown export
+- **Climate Anomaly**: Any year's monthly means against the 1991–2020 WMO normal, with a warm/cool chart
+- **Date entry**: Explicit Year / Month / Day controls — no OS calendar on mobile, and the month can never be read as the day
+- **Quick ranges**: Last 30 days, this year, last year, 1940 → today
 - **Units**: European primary (°C, km/h, mm) with toggle to Fahrenheit/mph/inches
+- **Remembers**: City, units, resolution, field selection and dates persist across reloads
 - **Mobile-friendly**: Glass-panel UI, responsive design (tested on Huawei Mate 10 Pro)
+
+### Markdown export
+
+`.md` is a readable digest rather than a copy of the rows: a metadata header
+(location, range, resolution, units, source) followed by **yearly, monthly and
+ISO-weekly** aggregate tables. Each column is aggregated by its own rule —
+`sum` for precipitation and sunshine, `max`/`min` for daily extremes, a
+**circular mean** for wind direction (350° and 10° average to 0°, not 180°),
+and the arithmetic mean for everything else. A `Points` column shows how many
+readings each period holds, so partial weeks and months at the edges of a range
+are visible instead of silently averaged.
 
 ## Live
 
