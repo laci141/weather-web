@@ -119,6 +119,11 @@
       box-shadow: 0 0 30px 2px rgba(167,139,250,.25), 0 18px 50px -18px rgba(0,0,0,.75);
     }
     .bento-card.violet:hover { box-shadow: 0 0 40px 4px rgba(167,139,250,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
+    .bento-card.rose {
+      --a1: #fb7185; --a2: #f97316;
+      box-shadow: 0 0 30px 2px rgba(251,113,133,.25), 0 18px 50px -18px rgba(0,0,0,.75);
+    }
+    .bento-card.rose:hover { box-shadow: 0 0 40px 4px rgba(251,113,133,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
 
     /* keyless-API notice, above the panels */
     .api-note {
@@ -380,6 +385,7 @@
     .btn-amber  { background: linear-gradient(135deg, #f59e0b, #ef4444); width: 100%; }
     .btn-teal   { background: linear-gradient(135deg, #14b8a6, #06b6d4); width: 100%; }
     .btn-violet { background: linear-gradient(135deg, #a78bfa, #7c3aed); width: 100%; }
+    .btn-rose   { background: linear-gradient(135deg, #fb7185, #f97316); width: 100%; }
 
     /* anomaly readout — warmer than baseline reads red, cooler reads blue */
     .anom-head { font-size: 1.6rem; font-weight: 800; margin: 16px 0 4px; }
@@ -594,6 +600,12 @@
         <p>Two cities side by side over 5 to 30 years — temperature and precipitation, year by year, with the average difference.</p>
         <button class="card-btn">Open</button>
       </div>
+      <div class="bento-card glass rose wide" onclick="openModal('thModal')">
+        <div class="bento-icon">🔥</div>
+        <h3>Threshold Days</h3>
+        <p>How many days crossed a limit each year — above 30 to 49 °C, hot days that also stayed warm overnight, days over 10 to 150 mm of rain, and the longest run without rain.</p>
+        <button class="card-btn">Open</button>
+      </div>
     </div>
 
     <!-- GLOBAL UNIT TOGGLES -->
@@ -793,6 +805,34 @@
       <div class="pill-grid" id="cmpPeriod"></div>
       <button class="btn btn-violet" id="cmpBtn" onclick="runCompare()">Compare cities</button>
       <div id="cmpResult"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: THRESHOLD DAYS -->
+  <div class="modal" id="thModal" style="--a1:#fb7185; --a2:#f97316">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('thModal')">&times;</button>
+      <h2>&#128293; Threshold Days</h2>
+      <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
+        Counts of days that cross a limit, year by year. Averages hide what you actually feel &mdash;
+        &ldquo;how many days over 35&nbsp;&deg;C&rdquo; does not. Thresholds are always in &deg;C and mm,
+        whatever the unit toggle says.
+      </p>
+      <div class="form-group">
+        <label for="thCity">City</label>
+        <input type="text" id="thCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runThresholds()">
+      </div>
+      <div class="pill-label">Period</div>
+      <div class="pill-grid" id="thPeriod"></div>
+      <div class="pill-label">Rain threshold <span style="color:#64748b">(a wet day is at least this much)</span></div>
+      <div class="pill-set" id="thWet"></div>
+      <div class="pill-label">Temperature thresholds</div>
+      <div class="date-parts" style="grid-template-columns:1fr 1fr">
+        <div class="dp-cell"><label for="thHot">Hot day &mdash; daytime maximum</label><select id="thHot"></select></div>
+        <div class="dp-cell"><label for="thNight">Warm night &mdash; overnight minimum</label><select id="thNight"></select></div>
+      </div>
+      <button class="btn btn-rose" id="thBtn" onclick="runThresholds()" style="margin-top:16px">Count days</button>
+      <div id="thResult"></div>
     </div>
   </div>
 
@@ -2915,13 +2955,316 @@
       }
     }
 
+    // ---------- THRESHOLD DAYS ----------
+    // Counts of days that cross a limit, year by year. Averages hide what people
+    // actually feel; "how many days over 35 °C" does not.
+    //
+    // This panel always asks the API for °C and mm regardless of the unit
+    // toggle, because the thresholds themselves are stated in °C and mm — a
+    // 30 °C limit silently compared against Fahrenheit data would be nonsense.
+    const HOT_THRESHOLDS = Array.from({ length: 20 }, (_, i) => 30 + i);   // 30…49 °C
+    const NIGHT_THRESHOLDS = Array.from({ length: 16 }, (_, i) => 10 + i); // 10…25 °C
+    const WET_THRESHOLDS = [10, 20, 30, 90, 150];                          // mm in a day
+    // Meteorological convention: a day under 1 mm counts as dry. ERA5 sprinkles
+    // trace amounts almost everywhere, so an exact-zero test would find nothing.
+    const DRY_DAY_MM = 1;
+    const METRIC_UNITS = { temperature: 'celsius', wind: 'kmh', precipitation: 'mm' };
+
+    let thCharts = [];
+    let lastThresholds = null;
+
+    function buildThresholdControls() {
+      document.getElementById('thPeriod').innerHTML =
+        TREND_PERIODS.map(n =>
+          `<label class="pill${n === 30 ? ' on' : ''}" style="--pc:#fb7185" data-pill="t${n}">` +
+          `<input type="radio" name="thper" value="${n}"${n === 30 ? ' checked' : ''}>Last ${n} years</label>`
+        ).join('') +
+        '<label class="pill" style="--pc:#fb7185" data-pill="tmax">' +
+        '<input type="radio" name="thper" value="max">1940 → today</label>';
+
+      document.getElementById('thWet').innerHTML = WET_THRESHOLDS.map(n =>
+        `<label class="pill${n === 20 ? ' on' : ''}" style="--pc:#38bdf8" data-pill="w${n}">` +
+        `<input type="radio" name="thwet" value="${n}"${n === 20 ? ' checked' : ''}>≥ ${n} mm</label>`
+      ).join('');
+
+      document.getElementById('thHot').innerHTML =
+        HOT_THRESHOLDS.map(n => `<option value="${n}"${n === 30 ? ' selected' : ''}>above ${n} °C</option>`).join('');
+      document.getElementById('thNight').innerHTML =
+        NIGHT_THRESHOLDS.map(n => `<option value="${n}"${n === 15 ? ' selected' : ''}>above ${n} °C</option>`).join('');
+    }
+    buildThresholdControls();
+
+    // slope per decade reads better than per year for whole-day counts
+    function decadeTrend(years, values) {
+      const fit = linFit(years, values);
+      return { slope: fit.slope, perDecade: fit.slope * 10, fit };
+    }
+
+    function thresholdImageSpec() {
+      const t = lastThresholds;
+      if (!t) return null;
+      return {
+        emoji: '🔥', title: 'Threshold Days',
+        filename: `thresholds_${safeName(t.city)}_${t.years[0]}-${t.years[t.years.length - 1]}`,
+        subtitle: [
+          `${t.loc.name}${t.loc.country_code ? ', ' + t.loc.country_code : ''} · ${t.loc.latitude}, ${t.loc.longitude}`,
+          `${t.years[0]}–${t.years[t.years.length - 1]} · ${t.years.length} complete years · ` +
+          `hot > ${t.hotT} °C · wet ≥ ${t.wetT} mm · warm night > ${t.nightT} °C · dry day < ${DRY_DAY_MM} mm`
+        ],
+        headline: {
+          text: `${t.rows.hot.avg.toFixed(1)} hot days a year`,
+          color: '#f87171',
+          sub: `${signed(t.rows.hot.perDecade)} days per decade · longest dry spell ${t.maxDry.days} days in ${t.maxDry.year}`
+        },
+        sections: [
+          { heading: `Days above ${t.hotT} °C, and those also staying above ${t.nightT} °C at night`,
+            chart: { config: (thCharts[0] || {}).config, height: 430 } },
+          { heading: `Days with ${t.wetT} mm or more, and the longest dry spell`,
+            chart: { config: (thCharts[1] || {}).config, height: 430 } },
+          { heading: 'Year by year', table: { header: t.header, rows: t.tableRows } }
+        ],
+        footer: IMAGE_FOOTER
+      };
+    }
+
+    function exportThresholds(format) {
+      const t = lastThresholds;
+      const msg = document.getElementById('thExportMsg');
+      if (!t || !msg) return;
+      const fname = `thresholds_${safeName(t.city)}_${t.years[0]}-${t.years[t.years.length - 1]}.${format}`;
+      try {
+        const md = () => {
+          const L = [];
+          L.push(`# Threshold days — ${t.loc.name}${t.loc.country_code ? ', ' + t.loc.country_code : ''}`, '');
+          L.push('| | |', '|---|---|');
+          L.push(`| Coordinates | ${t.loc.latitude}, ${t.loc.longitude} |`);
+          L.push(`| Period | ${t.years[0]}–${t.years[t.years.length - 1]} (${t.years.length} complete years) |`);
+          L.push(`| Hot day | daily maximum above ${t.hotT} °C |`);
+          L.push(`| Warm night | daily minimum above ${t.nightT} °C |`);
+          L.push(`| Wet day | ${t.wetT} mm or more in a day |`);
+          L.push(`| Dry day | under ${DRY_DAY_MM} mm |`);
+          if (t.skipped.length) L.push(`| Years skipped (incomplete) | ${t.skipped.join(', ')} |`);
+          L.push('| Source | Open-Meteo archive (ERA5) |');
+          L.push(`| Generated | ${TODAY} |`, '');
+          L.push('## Averages and trends', '', '| Indicator | Average per year | Change per decade |', '|---|---:|---:|');
+          Object.values(t.rows).forEach(r => L.push(`| ${r.label} | ${r.avg.toFixed(1)} | ${signed(r.perDecade)} |`));
+          L.push('', '## Year by year', '');
+          L.push(`| ${t.header.join(' | ')} |`, `|---|${t.header.slice(1).map(() => '---:').join('|')}|`);
+          t.tableRows.forEach(r => L.push(`| ${r.join(' | ')} |`));
+          return L.join('\n');
+        };
+        const blob = serializeTable(t.header, t.tableRows, format, md, {
+          city: t.city, thresholds: { hotC: t.hotT, nightC: t.nightT, wetMM: t.wetT, dryDayUnderMM: DRY_DAY_MM },
+          years: t.tableRows
+        });
+        downloadBlob(blob, fname);
+        const kb = Math.max(1, Math.round(blob.size / 1024));
+        msg.innerHTML = `<div class="ok-box">✅ Downloaded: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
+      } catch (err) {
+        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      }
+    }
+
+    function thresholdChart(canvasId, labels, sets, axisLabel) {
+      const ctx = document.getElementById(canvasId);
+      if (!ctx || typeof Chart === 'undefined') return;
+      thCharts.push(new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: sets.map(s => ({
+            type: s.type || 'bar',
+            label: s.label,
+            data: s.data,
+            backgroundColor: s.color,
+            borderColor: s.color,
+            borderDash: s.type === 'line' ? [6, 4] : undefined,
+            borderWidth: s.type === 'line' ? 2 : undefined,
+            pointRadius: s.type === 'line' ? 0 : undefined,
+            fill: false
+          }))
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: { legend: { labels: { color: '#e0e0e0', boxWidth: 14, font: { size: 11 } } } },
+          scales: {
+            x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0', maxTicksLimit: 16 } },
+            y: {
+              beginAtZero: true,
+              grid: { color: 'rgba(255,255,255,0.08)' },
+              ticks: { color: '#a0aec0' },
+              title: { display: true, text: axisLabel, color: '#a0aec0' }
+            }
+          }
+        },
+        plugins: [satelliteMarker]
+      }));
+    }
+
+    async function runThresholds() {
+      const city = document.getElementById('thCity').value.trim();
+      const out = document.getElementById('thResult');
+      const btn = document.getElementById('thBtn');
+      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+
+      const hotT = Number(document.getElementById('thHot').value);
+      const nightT = Number(document.getElementById('thNight').value);
+      const wetT = Number(document.querySelector('#thWet input:checked').value);
+      const period = document.querySelector('#thPeriod input:checked').value;
+      const startYear = period === 'max' ? 1940 : THIS_YEAR - Number(period) + 1;
+
+      out.innerHTML = '<div class="spinner"></div><p style="text-align:center;color:#94a3b8;font-size:0.85rem">' +
+                      `Counting days from ${startYear} — this can take a few seconds…</p>`;
+      btn.disabled = true;
+      try {
+        const loc = await geocode(city);
+        const d = await postJSON('/api/history-daily', {
+          latitude: loc.latitude, longitude: loc.longitude,
+          start_date: isoOf(startYear, 1, 1), end_date: TODAY,
+          fields: ['temperature_2m_max', 'temperature_2m_min', 'precipitation_sum'],
+          units: METRIC_UNITS
+        });
+        const times = (d.daily || {}).time || [];
+        if (!times.length) throw new Error('No archive data for this location.');
+        const mx = d.daily.temperature_2m_max || [];
+        const mn = d.daily.temperature_2m_min || [];
+        const pr = d.daily.precipitation_sum || [];
+
+        const byYear = new Map();
+        times.forEach((t, i) => {
+          const y = Number(t.slice(0, 4));
+          let g = byYear.get(y);
+          if (!g) byYear.set(y, g = { n: 0, max: [], min: [], prec: [] });
+          g.n++;
+          g.max.push(mx[i]);
+          g.min.push(mn[i]);
+          g.prec.push(pr[i]);
+        });
+
+        const years = [], skipped = [];
+        for (let y = startYear; y <= THIS_YEAR; y++) {
+          const g = byYear.get(y);
+          (g && g.n >= 360 ? years : skipped).push(y);
+        }
+        if (years.length < 3) throw new Error('Not enough complete years in this period.');
+
+        const num = (v) => (v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v));
+        const hot = [], wet = [], dry = [], hotNight = [];
+        years.forEach(y => {
+          const g = byYear.get(y);
+          let h = 0, w = 0, hn = 0, run = 0, best = 0;
+          g.max.forEach((rawMax, i) => {
+            const vMax = num(rawMax), vMin = num(g.min[i]), vP = num(g.prec[i]);
+            if (vMax !== null && vMax > hotT) {
+              h++;
+              if (vMin !== null && vMin > nightT) hn++;
+            }
+            if (vP !== null && vP >= wetT) w++;
+            // an unknown day breaks the run — continuity cannot be claimed
+            if (vP === null) run = 0;
+            else if (vP < DRY_DAY_MM) { run++; if (run > best) best = run; }
+            else run = 0;
+          });
+          hot.push(h); wet.push(w); dry.push(best); hotNight.push(hn);
+        });
+
+        const mean = (a) => a.reduce((x, y2) => x + y2, 0) / a.length;
+        const mk = (label, data, color) => ({ label, data, color, avg: mean(data), ...decadeTrend(years, data) });
+        const rows = {
+          hot: mk(`Days above ${hotT} °C`, hot, '#ef4444'),
+          hotNight: mk(`Above ${hotT} °C with a night over ${nightT} °C`, hotNight, '#f97316'),
+          wet: mk(`Days with ≥ ${wetT} mm`, wet, '#38bdf8'),
+          dry: mk('Longest dry spell (days)', dry, '#b45309')
+        };
+        let maxDry = { days: -1, year: null };
+        dry.forEach((v, i) => { if (v > maxDry.days) maxDry = { days: v, year: years[i] }; });
+
+        const header = ['Year', `Days > ${hotT} °C`, `> ${hotT} °C & night > ${nightT} °C`,
+                        `Days ≥ ${wetT} mm`, 'Longest dry spell'];
+        const tableRows = years.map((y, i) =>
+          [String(y) + (y < SATELLITE_ERA ? ' *' : ''), hot[i], hotNight[i], wet[i], dry[i]]);
+
+        thCharts.forEach(c => c.destroy());
+        thCharts = [];
+        lastThresholds = { city, loc, years, skipped, hotT, nightT, wetT, rows, maxDry, header, tableRows };
+
+        let h = `<div class="loc-header">${esc(loc.name)}, ${esc(loc.country_code || '')}</div>`;
+        h += `<div class="loc-sub">${esc(d.latitude)}, ${esc(d.longitude)} · ${esc(d.timezone || '')} · ` +
+             `${esc(years[0])}–${esc(years[years.length - 1])}, ${esc(years.length)} complete years</div>`;
+        h += `<div class="anom-head warm">${esc(rows.hot.avg.toFixed(1))} hot days a year</div>`;
+        h += `<div class="anom-sub">above ${esc(hotT)} °C, averaged over the period — ` +
+             `${esc(signed(rows.hot.perDecade))} days per decade. ` +
+             `Longest dry spell: ${esc(maxDry.days)} days in ${esc(maxDry.year)}.`;
+        if (skipped.length) h += ` Skipped as incomplete: ${esc(skipped.join(', '))}.`;
+        h += '</div>';
+
+        h += '<div class="table-wrap" style="max-height:none"><table><tr><th>Indicator</th>' +
+             '<th>Average per year</th><th>Change per decade</th></tr>';
+        Object.values(rows).forEach(r => {
+          h += `<tr><td>${esc(r.label)}</td><td>${esc(r.avg.toFixed(1))}</td>` +
+               `<td class="${r.perDecade >= 0 ? 'warm' : 'cool'}">${esc(signed(r.perDecade))}</td></tr>`;
+        });
+        h += '</table></div>';
+
+        h += `<div class="week-block"><div class="week-head">🔥 Hot days</div>` +
+             '<div class="chart-wrap"><canvas id="thCanvasHot"></canvas></div></div>';
+        h += `<div class="week-block"><div class="week-head">💧 Wet days and dry spells</div>` +
+             '<div class="chart-wrap"><canvas id="thCanvasWet"></canvas></div></div>';
+
+        h += '<div class="table-wrap"><table><tr>' + header.map(x => `<th>${esc(x)}</th>`).join('') + '</tr>';
+        tableRows.forEach(r => {
+          h += '<tr>' + r.map((c, i) => `<td${i === 0 ? '' : ' class="warm"'}>${esc(c)}</td>`).join('') + '</tr>';
+        });
+        h += '</table></div>';
+        if (years[0] < SATELLITE_ERA) {
+          h += '<div class="info-box">ℹ️ Years marked * predate the satellite era (1979) — fewer observations stand behind them.</div>';
+        }
+        h += '<div class="dl-row" style="margin-top:14px">' +
+             '<button class="btn btn-rose" style="width:auto" onclick="exportThresholds(\'xlsx\')">📥 XLSX</button>' +
+             '<button class="btn btn-gray" onclick="exportThresholds(\'csv\')">📄 CSV</button>' +
+             '<button class="btn btn-gray" onclick="exportThresholds(\'json\')">🧾 JSON</button>' +
+             '<button class="btn btn-gray" onclick="exportThresholds(\'md\')">📝 MD</button>' +
+             imageButtons('thresholdImageSpec()', 'thExportMsg') +
+             '</div><div id="thExportMsg"></div>';
+        h += '<div class="data-note"><strong>Definitions.</strong> Hot day: daily maximum above ' + hotT + ' °C. ' +
+             'Warm night: daily <em>minimum</em> above ' + nightT + ' °C — the archive gives a daily minimum rather than an ' +
+             'evening reading, and the minimum falls overnight, so this counts nights that never dropped below the limit. ' +
+             'Wet day: ' + wetT + ' mm or more. Dry day: under ' + DRY_DAY_MM + ' mm, the usual convention — ERA5 leaves trace ' +
+             'amounts almost everywhere, so an exact-zero test would find nothing. Thresholds are always in °C and mm, ' +
+             'whatever the unit toggle says.</div>';
+        h += TREND_NOTE;
+        out.innerHTML = h;
+
+        const labels = years.map(String);
+        thresholdChart('thCanvasHot', labels, [
+          { label: rows.hot.label, data: hot, color: rows.hot.color },
+          { label: rows.hotNight.label, data: hotNight, color: rows.hotNight.color },
+          { label: 'Trend (hot days)', data: years.map(y => rows.hot.fit.slope * y + rows.hot.fit.intercept),
+            color: '#e2e8f0', type: 'line' }
+        ], 'Days per year');
+        thresholdChart('thCanvasWet', labels, [
+          { label: rows.wet.label, data: wet, color: rows.wet.color },
+          { label: rows.dry.label, data: dry, color: rows.dry.color },
+          { label: 'Trend (wet days)', data: years.map(y => rows.wet.fit.slope * y + rows.wet.fit.intercept),
+            color: '#e2e8f0', type: 'line' }
+        ], 'Days');
+      } catch (err) {
+        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
     // ---------- settings persistence ----------
     // City, units, resolution, field selection and dates survive a reload, so
     // the app opens where it was left rather than on the built-in defaults.
     const STORE_KEY = 'weatherweb.v1';
-    const CITY_IDS = ['fcCity', 'hvCity', 'dlCity', 'anCity', 'trCity', 'cmpCityA', 'cmpCityB'];
+    const CITY_IDS = ['fcCity', 'hvCity', 'dlCity', 'anCity', 'trCity', 'cmpCityA', 'cmpCityB', 'thCity'];
+    const SELECT_IDS = ['thHot', 'thNight'];
     const RADIO_SETS = [['hv', 'hvRes'], ['dl', 'dlRes'], ['trvar', 'trVar'], ['trper', 'trPeriod'],
-                        ['cmpper', 'cmpPeriod']];
+                        ['cmpper', 'cmpPeriod'], ['thper', 'thPeriod'], ['thwet', 'thWet']];
 
     const inputVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
     const checkedRes = (id) => {
@@ -2938,6 +3281,7 @@
           units: { ...UNITS },
           res: Object.fromEntries(RADIO_SETS.map(([key, id]) => [key, checkedRes(id)])),
           baselines: Object.fromEntries(['anBaseline', 'trBaseline'].map(id => [id, baselineRange(id)])),
+          selects: Object.fromEntries(SELECT_IDS.map(id => [id, inputVal(id)])),
           fields: { hv: checkedKeys('hvPills'), dl: checkedKeys('dlPills') },
           dates: {
             hvFrom: dateValue('hvFrom'), hvTo: dateValue('hvTo'),
@@ -2985,6 +3329,11 @@
         });
       });
 
+      if (s.selects) SELECT_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && s.selects[id]) el.value = s.selects[id];
+      });
+
       if (s.baselines) Object.keys(s.baselines).forEach(id => {
         const b = s.baselines[id];
         const f = document.getElementById(id + '_from');
@@ -3005,7 +3354,7 @@
     updatePillAvailability('dlRes', 'dlPills');
     updatePillAvailability('hvRes', 'hvPills');
 
-    CITY_IDS.concat('anYear').forEach(id => {
+    CITY_IDS.concat('anYear', SELECT_IDS).forEach(id => {
       const el = document.getElementById(id);
       if (el) el.addEventListener('input', saveSettings);
     });
