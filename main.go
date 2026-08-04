@@ -47,7 +47,7 @@ func handleRoot(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	http.ServeFile(w, r, "index.html")
+	http.ServeFile(w, r, "public/index.html")
 }
 
 func handleHealthz(w http.ResponseWriter, r *http.Request) {
