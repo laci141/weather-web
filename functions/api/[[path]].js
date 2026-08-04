@@ -163,7 +163,8 @@ async function handleGeocoding(req) {
   return error || json({ results: data });
 }
 
-// POST /api/forecast — current conditions for the fields index.html renders.
+// POST /api/forecast — current conditions plus the 7-day outlook index.html
+// renders and exports.
 async function handleForecast(req) {
   const lat = Number(req.latitude);
   const lon = Number(req.longitude);
@@ -175,6 +176,8 @@ async function handleForecast(req) {
     latitude: lat.toFixed(6),
     longitude: lon.toFixed(6),
     current: 'temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,wind_speed_10m',
+    daily: 'temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max',
+    forecast_days: '7',
     timezone: 'auto',
     temperature_unit: tempUnit(req.units),
     wind_speed_unit: windUnit(req.units),

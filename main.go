@@ -118,24 +118,35 @@ func handleForecast(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// The CLI defaults to fahrenheit/mph — always pass explicit units so the
-	// European default (celsius/kmh) actually reaches the API.
-	cmd := exec.Command(cliBinary(), "forecast",
-		"--latitude", fmt.Sprintf("%f", req.Latitude),
-		"--longitude", fmt.Sprintf("%f", req.Longitude),
-		"--temperature-unit", req.Units.temp(),
-		"--wind-speed-unit", req.Units.wind(),
-		"--json")
-	out, err := cmd.Output()
-	if err != nil {
-		log.Print(err)
-		http.Error(w, "CLI error", http.StatusBadGateway)
+	// Called directly rather than through the CLI: the CLI exposes no flag for
+	// the daily block, and going straight to the API keeps this response byte
+	// -for-byte compatible with the Cloudflare Pages Function.
+	params := url.Values{}
+	params.Set("latitude", fmt.Sprintf("%f", req.Latitude))
+	params.Set("longitude", fmt.Sprintf("%f", req.Longitude))
+	params.Set("current", "temperature_2m,apparent_temperature,relative_humidity_2m,precipitation,wind_speed_10m")
+	params.Set("daily", "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max")
+	params.Set("forecast_days", "7")
+	params.Set("timezone", "auto")
+	params.Set("temperature_unit", req.Units.temp())
+	params.Set("wind_speed_unit", req.Units.wind())
+	params.Set("precipitation_unit", req.Units.precip())
+
+	body, ok := fetchMeteo(w, forecastBase+"?"+params.Encode())
+	if !ok {
 		return
 	}
+	writeResults(w, body)
+}
 
+// writeResults nests the payload under "results", the shape the weather-goat
+// CLI's --json output had and index.html still reads.
+func writeResults(w http.ResponseWriter, body []byte) {
 	setCORS(w)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(out)
+	w.Write([]byte(`{"results":`))
+	w.Write(body)
+	w.Write([]byte(`}`))
 }
 
 type geocodingRequest struct {
@@ -274,11 +285,26 @@ func proxyMeteo(w http.ResponseWriter, r *http.Request, base, param string, allo
 	params.Set("wind_speed_unit", req.Units.wind())
 	params.Set("precipitation_unit", req.Units.precip())
 
-	resp, err := meteoClient.Get(base + "?" + params.Encode())
+	body, ok := fetchMeteo(w, base+"?"+params.Encode())
+	if !ok {
+		return
+	}
+
+	setCORS(w)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(body)
+}
+
+// fetchMeteo performs the upstream request and maps every failure onto a 502,
+// including Open-Meteo's habit of reporting parameter errors as HTTP 200 with
+// {"error":true,...} — surfacing those keeps the client from treating an error
+// payload as data. It reports false once it has written a response itself.
+func fetchMeteo(w http.ResponseWriter, target string) ([]byte, bool) {
+	resp, err := meteoClient.Get(target)
 	if err != nil {
 		log.Print(err)
 		http.Error(w, "weather API unreachable", http.StatusBadGateway)
-		return
+		return nil, false
 	}
 	defer resp.Body.Close()
 
@@ -286,27 +312,22 @@ func proxyMeteo(w http.ResponseWriter, r *http.Request, base, param string, allo
 	if err != nil {
 		log.Print(err)
 		http.Error(w, "reading weather API response", http.StatusBadGateway)
-		return
+		return nil, false
 	}
 	if resp.StatusCode >= 400 {
 		http.Error(w, string(body), http.StatusBadGateway)
-		return
+		return nil, false
 	}
-	// Open-Meteo reports parameter errors as HTTP 200 with {"error":true,...};
-	// surface those as 502 so the client shows a clean error instead of
-	// treating the payload as data.
+
 	var apiErr struct {
 		Error  bool   `json:"error"`
 		Reason string `json:"reason"`
 	}
 	if json.Unmarshal(body, &apiErr) == nil && apiErr.Error {
 		http.Error(w, apiErr.Reason, http.StatusBadGateway)
-		return
+		return nil, false
 	}
-
-	setCORS(w)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
+	return body, true
 }
 
 const archiveBase = "https://archive-api.open-meteo.com/v1/archive"

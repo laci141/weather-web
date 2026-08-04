@@ -102,6 +102,11 @@
       box-shadow: 0 0 30px 2px rgba(34,197,94,.25), 0 18px 50px -18px rgba(0,0,0,.75);
     }
     .bento-card.green:hover { box-shadow: 0 0 40px 4px rgba(34,197,94,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
+    .bento-card.amber {
+      --a1: #f59e0b; --a2: #ef4444;
+      box-shadow: 0 0 30px 2px rgba(245,158,11,.25), 0 18px 50px -18px rgba(0,0,0,.75);
+    }
+    .bento-card.amber:hover { box-shadow: 0 0 40px 4px rgba(245,158,11,.45), 0 18px 50px -18px rgba(0,0,0,.75); }
     .bento-icon { font-size: 2.2rem; margin-bottom: 12px; }
     .bento-card h3 { font-size: 1.25rem; color: #fff; font-weight: 700; margin-bottom: 6px; }
     .bento-card p { font-size: 0.92rem; color: #a0aec0; line-height: 1.5; margin-bottom: 18px; }
@@ -256,6 +261,38 @@
       background: rgba(255, 255, 255, 0.12);
       border-color: rgba(59, 130, 246, 0.6);
     }
+    .date-echo { margin-top: 5px; font-size: 0.78rem; color: #94a3b8; min-height: 1.1em; }
+
+    /* DATE PARTS — explicit Year / Month / Day controls. A native
+       <input type="date"> opens the OS calendar on mobile, where reaching 1940
+       means paging through a year list; three labelled fields also make the
+       month impossible to confuse with the day. Stays 3-across on phones. */
+    .date-parts { display: grid; grid-template-columns: 1fr 1.35fr 0.85fr; gap: 6px; }
+    .date-parts .dp-cell > label {
+      display: block; margin-bottom: 4px; font-size: 0.7rem; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8;
+    }
+    .date-parts input, .date-parts select {
+      width: 100%; padding: 11px 7px; min-height: 44px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px; color: #fff; font-size: 0.97rem; color-scheme: dark;
+    }
+    .date-parts input:focus, .date-parts select:focus {
+      outline: none; border-color: rgba(59, 130, 246, 0.6);
+    }
+    .date-parts input.bad { border-color: rgba(239, 68, 68, 0.7); }
+
+    /* QUICK RANGE PRESETS */
+    .preset-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 15px; }
+    .preset-btn {
+      padding: 8px 14px; min-height: 38px; border-radius: 999px; cursor: pointer;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: #cbd5e1; font-size: 0.85rem; font-weight: 500;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .preset-btn:hover { background: rgba(255, 255, 255, 0.13); color: #fff; }
 
     /* PILL TOGGLES — even grid: 4 per row desktop, 2 per row mobile */
     .pill-grid {
@@ -310,6 +347,15 @@
     .btn-purple { background: linear-gradient(135deg, #8b5cf6, #d946ef); width: 100%; }
     .btn-green  { background: linear-gradient(135deg, #22c55e, #10b981); }
     .btn-gray   { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); }
+    .btn-amber  { background: linear-gradient(135deg, #f59e0b, #ef4444); width: 100%; }
+
+    /* anomaly readout — warmer than baseline reads red, cooler reads blue */
+    .anom-head { font-size: 1.6rem; font-weight: 800; margin: 16px 0 4px; }
+    .anom-head.warm { color: #f87171; }
+    .anom-head.cool { color: #60a5fa; }
+    .anom-sub { color: #94a3b8; font-size: 0.9rem; margin-bottom: 12px; }
+    td.warm { color: #f87171; font-weight: 600; }
+    td.cool { color: #60a5fa; font-weight: 600; }
 
     .spinner {
       border: 3px solid rgba(59, 130, 246, 0.2);
@@ -389,6 +435,12 @@
     /* Modal text ~20% bigger for readability (labels, inputs, chips, tables) */
     .modal-content .form-group label { font-size: 1.06rem; }
     .modal-content .form-group input { font-size: 1.2rem; }
+    .modal-content .date-echo { font-size: 0.92rem; }
+    /* date parts keep a smaller face than other modal inputs so three of them
+       still fit across a phone without clipping the month name */
+    .modal-content .date-parts input, .modal-content .date-parts select { font-size: 1rem; }
+    .modal-content .date-parts .dp-cell > label { font-size: 0.76rem; }
+    .modal-content .preset-btn { font-size: 0.95rem; }
     .modal-content .pill-label { font-size: 1.06rem; }
     .modal-content .pill { font-size: 1.06rem; }
     .modal-content table { font-size: 1.06rem; }
@@ -466,7 +518,13 @@
       <div class="bento-card glass green" onclick="openModal('dlModal')">
         <div class="bento-icon">💾</div>
         <h3>Data Downloader</h3>
-        <p>Bulk export — daily, hourly, 3-hourly or 15-min resolution → XLSX, CSV or JSON. No on-screen render.</p>
+        <p>Bulk export — daily, hourly, 3-hourly or 15-min resolution → XLSX, CSV, JSON or Markdown.</p>
+        <button class="card-btn">Open</button>
+      </div>
+      <div class="bento-card glass amber" onclick="openModal('anomModal')">
+        <div class="bento-icon">🌡️</div>
+        <h3>Climate Anomaly</h3>
+        <p>How much warmer or cooler was a year than the 1991–2020 normal? Month by month, back to 1940.</p>
         <button class="card-btn">Open</button>
       </div>
     </div>
@@ -514,18 +572,19 @@
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('viewModal')">×</button>
       <h2>📅 Historical View (1940–today)</h2>
+      <div class="preset-row" id="hvPresets"></div>
       <div class="form-row">
         <div class="form-group">
           <label for="hvCity">City</label>
           <input type="text" id="hvCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runView()">
         </div>
         <div class="form-group">
-          <label for="hvFrom">From</label>
-          <input type="date" id="hvFrom" value="1966-05-05" min="1940-01-01">
+          <label>From</label>
+          <div id="hvFrom"></div>
         </div>
         <div class="form-group">
-          <label for="hvTo">To</label>
-          <input type="date" id="hvTo" value="1966-06-05" min="1940-01-01">
+          <label>To</label>
+          <div id="hvTo"></div>
         </div>
       </div>
       <div class="pill-label">Resolution <span style="color:#64748b">(daily ≤35 days · hourly ≤3 days · 15-min ≤1 day, last ~3 months)</span></div>
@@ -546,18 +605,19 @@
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('dlModal')">×</button>
       <h2>💾 Data Downloader</h2>
+      <div class="preset-row" id="dlPresets"></div>
       <div class="form-row">
         <div class="form-group">
           <label for="dlCity">City</label>
           <input type="text" id="dlCity" placeholder="e.g. Oradea">
         </div>
         <div class="form-group">
-          <label for="dlFrom">From</label>
-          <input type="date" id="dlFrom" value="1985-01-01" min="1940-01-01">
+          <label>From</label>
+          <div id="dlFrom"></div>
         </div>
         <div class="form-group">
-          <label for="dlTo">To</label>
-          <input type="date" id="dlTo" value="1985-12-31" min="1940-01-01">
+          <label>To</label>
+          <div id="dlTo"></div>
         </div>
       </div>
       <div class="pill-label">Resolution</div>
@@ -573,8 +633,36 @@
         <button class="btn btn-green" onclick="runDownload('xlsx')">📥 Download XLSX</button>
         <button class="btn btn-gray" onclick="runDownload('csv')">📄 Download CSV</button>
         <button class="btn btn-blue" style="width:auto" onclick="runDownload('json')">🧾 Download JSON</button>
+        <button class="btn btn-gray" onclick="runDownload('md')">📝 Download MD</button>
       </div>
+      <p style="color:#64748b;font-size:0.82rem;margin-top:10px">
+        MD = readable summary: header + weekly, monthly and yearly aggregates (not the raw rows).
+      </p>
       <div id="dlResult"></div>
+    </div>
+  </div>
+
+  <!-- MODAL: CLIMATE ANOMALY -->
+  <div class="modal" id="anomModal" style="--a1:#f59e0b; --a2:#ef4444">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal('anomModal')">×</button>
+      <h2>🌡️ Climate Anomaly</h2>
+      <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
+        Compares a year's monthly mean temperature against the 1991–2020 climate normal —
+        the 30-year reference period used by the WMO.
+      </p>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="anCity">City</label>
+          <input type="text" id="anCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runAnomaly()">
+        </div>
+        <div class="form-group">
+          <label for="anYear">Year to compare</label>
+          <input type="number" id="anYear" min="1940" step="1" inputmode="numeric" placeholder="e.g. 2024">
+        </div>
+      </div>
+      <button class="btn btn-amber" id="anBtn" onclick="runAnomaly()">Compare to normal</button>
+      <div id="anResult"></div>
     </div>
   </div>
 
@@ -593,6 +681,9 @@
     const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
     const TODAY = new Date().toISOString().slice(0, 10);
     const MIN_DATE = '1940-01-01';
+    // Declared up here because the controls built below already call
+    // saveSettings(); the persistence block itself lives at the end of the file.
+    let settingsReady = false;
 
     // ---------- field catalogue ----------
     const FIELDS = {
@@ -624,10 +715,154 @@
     buildPills('hvPills', HV_DEFAULTS);
     buildPills('dlPills', DL_DEFAULTS);
 
-    document.querySelectorAll('input[type="date"]').forEach(i => {
-      i.min = MIN_DATE;
-      i.max = TODAY;
-    });
+    // ---------- date fields ----------
+    // A native <input type="date"> renders and parses in the BROWSER's locale:
+    // on an English browser "03/08/2026" typed as 3 August is read as 8 March,
+    // and on a phone it forces the OS calendar, where 1940 is a long scroll
+    // away. Three labelled controls remove both problems, and the echo line
+    // restates the result in one unambiguous form.
+    const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+    const DATE_FIELDS = {};
+
+    const pad2 = (n) => String(n).padStart(2, '0');
+    const daysInMonth = (y, m) => new Date(Date.UTC(y, m, 0)).getUTCDate();
+    const isoOf = (y, m, d) => `${y}-${pad2(m)}-${pad2(d)}`;
+
+    function dateValue(id) {
+      const f = DATE_FIELDS[id];
+      if (!f) return '';
+      const y = parseInt(f.y.value, 10), m = parseInt(f.m.value, 10), d = parseInt(f.d.value, 10);
+      if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return '';
+      return isoOf(y, m, d);
+    }
+
+    function renderDateEcho(id) {
+      const f = DATE_FIELDS[id];
+      const iso = dateValue(id);
+      if (!iso) { f.echo.textContent = ''; return; }
+      const [y, m, d] = iso.split('-').map(Number);
+      f.echo.textContent = `${iso} · ${d} ${MONTH_NAMES[m - 1]} ${y}`;
+    }
+
+    // Day options follow the chosen month and year, so 31 February can never be
+    // selected and a leap day stays reachable.
+    function rebuildDays(id, year, month, wantDay) {
+      const d = DATE_FIELDS[id].d;
+      const n = daysInMonth(year, month);
+      if (d.options.length !== n) {
+        d.innerHTML = Array.from({ length: n }, (_, i) => `<option value="${i + 1}">${i + 1}</option>`).join('');
+      }
+      d.value = String(Math.min(Math.max(wantDay, 1), n));
+    }
+
+    function setDateField(id, iso) {
+      if (!DATE_RE.test(iso || '')) iso = TODAY;
+      const [y, m, d] = iso.split('-').map(Number);
+      const f = DATE_FIELDS[id];
+      f.y.value = String(y);
+      f.y.classList.remove('bad');
+      f.m.value = String(m);
+      rebuildDays(id, y, m, d);
+      renderDateEcho(id);
+      saveSettings();
+    }
+
+    // commit=true runs on blur/select: the date is clamped into the supported
+    // window. While the year is still being typed it only refreshes the echo,
+    // so "1" on the way to "1940" is not snapped away mid-keystroke.
+    function syncDateField(id, commit) {
+      const f = DATE_FIELDS[id];
+      const year = parseInt(f.y.value, 10);
+      const month = parseInt(f.m.value, 10) || 1;
+      const day = parseInt(f.d.value, 10) || 1;
+      if (!Number.isFinite(year)) {
+        f.y.classList.toggle('bad', f.y.value !== '');
+        if (commit) setDateField(id, TODAY); else f.echo.textContent = '';
+        return;
+      }
+      f.y.classList.remove('bad');
+      rebuildDays(id, year, month, day);
+      if (commit) {
+        let iso = isoOf(year, month, parseInt(f.d.value, 10));
+        if (iso < MIN_DATE) iso = MIN_DATE;
+        if (iso > TODAY) iso = TODAY;
+        setDateField(id, iso);
+        return;
+      }
+      renderDateEcho(id);
+      saveSettings();
+    }
+
+    function buildDateField(id, initial) {
+      document.getElementById(id).innerHTML =
+        `<div class="date-parts">` +
+          `<div class="dp-cell"><label for="${id}_y">Year</label>` +
+            `<input type="number" id="${id}_y" inputmode="numeric" min="${MIN_DATE.slice(0, 4)}" max="${TODAY.slice(0, 4)}"></div>` +
+          `<div class="dp-cell"><label for="${id}_m">Month</label><select id="${id}_m">` +
+            MONTH_FULL.map((n, i) => `<option value="${i + 1}">${n}</option>`).join('') +
+          `</select></div>` +
+          `<div class="dp-cell"><label for="${id}_d">Day</label><select id="${id}_d"></select></div>` +
+        `</div><div class="date-echo" id="${id}Echo"></div>`;
+      DATE_FIELDS[id] = {
+        y: document.getElementById(id + '_y'),
+        m: document.getElementById(id + '_m'),
+        d: document.getElementById(id + '_d'),
+        echo: document.getElementById(id + 'Echo')
+      };
+      DATE_FIELDS[id].y.addEventListener('input', () => syncDateField(id, false));
+      DATE_FIELDS[id].y.addEventListener('change', () => syncDateField(id, true));
+      DATE_FIELDS[id].m.addEventListener('change', () => syncDateField(id, true));
+      DATE_FIELDS[id].d.addEventListener('change', () => syncDateField(id, true));
+      setDateField(id, initial);
+    }
+
+    buildDateField('hvFrom', '1966-05-05');
+    buildDateField('hvTo', '1966-06-05');
+    buildDateField('dlFrom', '1985-01-01');
+    buildDateField('dlTo', '1985-12-31');
+
+    // ---------- quick range presets ----------
+    const shiftDays = (iso, n) =>
+      new Date(new Date(iso + 'T00:00:00Z').getTime() + n * 86400000).toISOString().slice(0, 10);
+    const THIS_YEAR = Number(TODAY.slice(0, 4));
+    const THIS_MONTH = Number(TODAY.slice(5, 7));
+
+    // History View caps ranges (daily ≤35 days), so it gets the short presets.
+    const PRESETS = {
+      hv: [
+        ['Last 7 days', () => [shiftDays(TODAY, -6), TODAY]],
+        ['Last 30 days', () => [shiftDays(TODAY, -29), TODAY]],
+        ['This month', () => [isoOf(THIS_YEAR, THIS_MONTH, 1), TODAY]],
+        ['Last month', () => {
+          const y = THIS_MONTH === 1 ? THIS_YEAR - 1 : THIS_YEAR;
+          const m = THIS_MONTH === 1 ? 12 : THIS_MONTH - 1;
+          return [isoOf(y, m, 1), isoOf(y, m, daysInMonth(y, m))];
+        }]
+      ],
+      dl: [
+        ['Last 30 days', () => [shiftDays(TODAY, -29), TODAY]],
+        ['This year', () => [isoOf(THIS_YEAR, 1, 1), TODAY]],
+        ['Last year', () => [isoOf(THIS_YEAR - 1, 1, 1), isoOf(THIS_YEAR - 1, 12, 31)]],
+        ['1940 → today', () => [MIN_DATE, TODAY]]
+      ]
+    };
+
+    function buildPresets(hostId, kind, fromId, toId) {
+      const host = document.getElementById(hostId);
+      host.innerHTML = PRESETS[kind]
+        .map((p, i) => `<button type="button" class="preset-btn" data-i="${i}">${p[0]}</button>`).join('');
+      host.addEventListener('click', (e) => {
+        const b = e.target.closest('.preset-btn');
+        if (!b) return;
+        const [from, to] = PRESETS[kind][Number(b.dataset.i)][1]();
+        setDateField(fromId, from < MIN_DATE ? MIN_DATE : from);
+        setDateField(toId, to > TODAY ? TODAY : to);
+      });
+    }
+    buildPresets('hvPresets', 'hv', 'hvFrom', 'hvTo');
+    buildPresets('dlPresets', 'dl', 'dlFrom', 'dlTo');
 
     // ---------- global units ----------
     const UNITS = { temp: 'celsius', wind: 'kmh', precip: 'mm' };
@@ -681,9 +916,6 @@
         p.classList.toggle('disabled', !supported);
       });
     }
-    updatePillAvailability('dlRes', 'dlPills');
-    updatePillAvailability('hvRes', 'hvPills');
-
     // ---------- shared fetch ----------
     async function postJSON(path, body) {
       const res = await fetch(path, {
@@ -719,6 +951,24 @@
     }
 
     // ---------- FORECAST ----------
+    // Fixed weekday names: the page is English regardless of the browser's
+    // locale, and this also keeps exported filenames stable.
+    const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const weekdayOf = (iso) => WEEKDAYS[new Date(iso + 'T00:00:00Z').getUTCDay()];
+    let lastForecast = null;
+
+    function exportForecast(format) {
+      const msg = document.getElementById('fcExportMsg');
+      if (!lastForecast || !msg) return;
+      try {
+        const exp = buildExport(lastForecast, format);
+        downloadBlob(exp.blob, exp.fname);
+        reportExport(msg, exp);
+      } catch (err) {
+        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      }
+    }
+
     async function runForecast() {
       const city = document.getElementById('fcCity').value.trim();
       const out = document.getElementById('fcResult');
@@ -742,6 +992,35 @@
             }
           });
         h += '</div>';
+
+        // 7-day outlook — also what makes the forecast worth exporting; the
+        // current conditions alone would be a single row.
+        const daily = r.daily || {};
+        const days = daily.time || [];
+        if (days.length) {
+          const cols = ['temperature_2m_max', 'temperature_2m_min', 'precipitation_sum', 'wind_speed_10m_max'];
+          h += '<div class="week-block"><div class="week-head">📆 Next 7 days</div>';
+          h += '<div class="table-wrap"><table><tr><th>Day</th>' +
+               cols.map(f => `<th>${esc(fieldLabel(f))}</th>`).join('') + '</tr>';
+          days.forEach((t, i) => {
+            h += `<tr><td>${esc(weekdayOf(t))} ${esc(t.slice(5))}</td>` +
+                 cols.map(f => {
+                   const v = (daily[f] || [])[i];
+                   return `<td>${v === null || v === undefined ? '—' : esc(v)}</td>`;
+                 }).join('') + '</tr>';
+          });
+          h += '</table></div></div>';
+          lastForecast = {
+            city, loc, meta: r, times: days, fields: cols, block: daily,
+            res: 'daily', from: days[0], to: days[days.length - 1]
+          };
+          h += '<div class="dl-row" style="margin-top:14px">' +
+               '<button class="btn btn-blue" style="width:auto" onclick="exportForecast(\'xlsx\')">📥 XLSX</button>' +
+               '<button class="btn btn-gray" onclick="exportForecast(\'csv\')">📄 CSV</button>' +
+               '<button class="btn btn-gray" onclick="exportForecast(\'json\')">🧾 JSON</button>' +
+               '<button class="btn btn-gray" onclick="exportForecast(\'md\')">📝 MD</button>' +
+               '</div><div id="fcExportMsg"></div>';
+        }
         out.innerHTML = h;
       } catch (err) {
         out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
@@ -756,6 +1035,7 @@
         case 'temperature_2m_max': return 'Max ' + tempSym();
         case 'temperature_2m_min': return 'Min ' + tempSym();
         case 'temperature_2m': return 'Temp ' + tempSym();
+        case 'temperature_2m_mean': return 'Mean ' + tempSym();
         case 'apparent_temperature_max': return 'Feels max ' + tempSym();
         case 'apparent_temperature_min': return 'Feels min ' + tempSym();
         case 'apparent_temperature': return 'Feels ' + tempSym();
@@ -885,8 +1165,8 @@
 
     async function runView() {
       const city = document.getElementById('hvCity').value.trim();
-      const from = document.getElementById('hvFrom').value;
-      const to = document.getElementById('hvTo').value;
+      const from = dateValue('hvFrom');
+      const to = dateValue('hvTo');
       const out = document.getElementById('hvResult');
       const reqRes = document.querySelector('#hvRes input:checked').value;
 
@@ -964,6 +1244,11 @@
         h += `<div class="loc-sub">${d.latitude}, ${d.longitude} · elevation ${esc(d.elevation)} m · ${esc(d.timezone || '')}</div>`;
         if (notice) h += `<div class="info-box">ℹ️ ${esc(notice)}</div>`;
 
+        // Export exactly what is on screen, so the same range never has to be
+        // retyped in the Downloader.
+        lastView = { city, loc, meta: d, times, fields, block, res: usedRes, from, to };
+        h += viewExportBar();
+
         if (usedRes === 'daily') {
           // weekly blocks
           const weeks = [];
@@ -1000,11 +1285,233 @@
       }
     }
 
+    // ---------- export helpers (shared by the Downloader and History View) ----------
+    function downloadBlob(blob, filename) {
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
+    const safeName = (s) => String(s).replace(/[^a-zA-Z0-9_-]+/g, '_');
+
+    // Every variable needs its own aggregation rule: precipitation over a week
+    // is a total, a daily maximum is the highest of the maxima, and wind
+    // direction must be averaged on the circle — 350° and 10° average to 0°,
+    // not to 180°.
+    const SUM_FIELDS = new Set(['precipitation', 'rain', 'snowfall', 'sunshine_duration']);
+    function aggRule(f) {
+      if (f.endsWith('_sum') || SUM_FIELDS.has(f)) return 'sum';
+      if (f.includes('wind_direction')) return 'circular';
+      if (f.endsWith('_max')) return 'max';
+      if (f.endsWith('_min')) return 'min';
+      return 'avg';
+    }
+
+    function aggregate(values, rule) {
+      const v = [];
+      for (const x of values) if (x !== null && x !== undefined && Number.isFinite(Number(x))) v.push(Number(x));
+      if (!v.length) return null;
+      switch (rule) {
+        case 'sum': return v.reduce((a, b) => a + b, 0);
+        case 'max': return v.reduce((a, b) => (b > a ? b : a), -Infinity);
+        case 'min': return v.reduce((a, b) => (b < a ? b : a), Infinity);
+        case 'circular': {
+          let s = 0, c = 0;
+          for (const deg of v) { const r = deg * Math.PI / 180; s += Math.sin(r); c += Math.cos(r); }
+          return (((Math.atan2(s / v.length, c / v.length) * 180 / Math.PI) % 360) + 360) % 360;
+        }
+        default: return v.reduce((a, b) => a + b, 0) / v.length;
+      }
+    }
+
+    // ISO-8601 week: Monday–Sunday, and a week belongs to the year containing
+    // its Thursday — so early January can fall in the previous year's W52/W53.
+    function isoWeek(day) {
+      const t = new Date(day + 'T00:00:00Z');
+      t.setUTCDate(t.getUTCDate() - ((t.getUTCDay() + 6) % 7) + 3);
+      const year = t.getUTCFullYear();
+      const jan4 = new Date(Date.UTC(year, 0, 4));
+      const week = 1 + Math.round(((t - jan4) / 86400000 - 3 + ((jan4.getUTCDay() + 6) % 7)) / 7);
+      return `${year}-W${pad2(week)}`;
+    }
+
+    function groupRows(times, fields, block, keyOf) {
+      const groups = new Map();
+      times.forEach((t, i) => {
+        const key = keyOf(t.slice(0, 10));
+        let g = groups.get(key);
+        if (!g) {
+          g = { key, points: 0, cols: {} };
+          fields.forEach(f => { g.cols[f] = []; });
+          groups.set(key, g);
+        }
+        g.points++;
+        fields.forEach(f => { g.cols[f].push((block[f] || [])[i]); });
+      });
+      return [...groups.values()];
+    }
+
+    function mdTable(groups, fields, periodLabel) {
+      const out = [
+        `| ${periodLabel} | Points | ${fields.map(f => `${fieldLabel(f)} (${aggRule(f)})`).join(' | ')} |`,
+        `|---|---:|${fields.map(() => '---:').join('|')}|`
+      ];
+      groups.forEach(g => {
+        const cells = fields.map(f => {
+          const v = aggregate(g.cols[f], aggRule(f));
+          return v === null ? '—' : String(Math.round(v * 10) / 10);
+        });
+        out.push(`| ${g.key} | ${g.points} | ${cells.join(' | ')} |`);
+      });
+      return out.join('\n');
+    }
+
+    // The Markdown export is a readable digest, not a copy of the raw rows:
+    // metadata header plus weekly, monthly and yearly aggregates.
+    function buildMarkdown(ctx) {
+      const { loc, meta, times, fields, block, res, from, to } = ctx;
+      const L = [];
+      L.push(`# Weather summary — ${loc.name}${loc.country_code ? ', ' + loc.country_code : ''}`, '');
+      L.push('| | |', '|---|---|');
+      L.push(`| Coordinates | ${loc.latitude}, ${loc.longitude} |`);
+      if (meta && meta.elevation !== undefined) L.push(`| Elevation | ${meta.elevation} m |`);
+      if (meta && meta.timezone) L.push(`| Timezone | ${meta.timezone} |`);
+      L.push(`| Range | ${from} → ${to} |`);
+      L.push(`| Resolution | ${res} |`);
+      L.push(`| Data points | ${times.length.toLocaleString('en-US')} |`);
+      L.push(`| Units | ${tempSym()}, ${windSym()}, ${precSym()} |`);
+      L.push('| Source | Open-Meteo archive (ERA5) |');
+      L.push(`| Generated | ${TODAY} |`, '');
+      L.push('> Column rules: `sum` totals the period, `max`/`min` take the extreme, `circular`');
+      L.push('> averages wind direction on the compass, `avg` is the arithmetic mean. The Points');
+      L.push('> column is how many readings a period actually holds, so partial weeks, months and');
+      L.push('> years at the edges of the range are visible rather than silently averaged.', '');
+      L.push('## Yearly', '', mdTable(groupRows(times, fields, block, d => d.slice(0, 4)), fields, 'Year'), '');
+      L.push('## Monthly', '', mdTable(groupRows(times, fields, block, d => d.slice(0, 7)), fields, 'Month'), '');
+      L.push('## Weekly (ISO)', '', mdTable(groupRows(times, fields, block, isoWeek), fields, 'ISO week'), '');
+      return L.join('\n');
+    }
+
+    // One serializer for every table the app exports; mdDoc is a thunk so the
+    // (potentially expensive) Markdown digest is only built when asked for.
+    function serializeTable(header, rows, format, mdDoc, jsonObj) {
+      if (format === 'xlsx') {
+        if (typeof XLSX === 'undefined') throw new Error('SheetJS failed to load.');
+        const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, 'Weather');
+        return new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })],
+          { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      }
+      if (format === 'csv') {
+        const csv = [header, ...rows].map(r => r.map(v => {
+          const s = String(v === null || v === undefined ? '' : v);
+          return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+        }).join(',')).join('\r\n');
+        // BOM so Excel opens UTF-8 correctly instead of mangling °C
+        return new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
+      }
+      if (format === 'md') return new Blob([mdDoc()], { type: 'text/markdown;charset=utf-8' });
+      return new Blob([JSON.stringify(jsonObj, null, 2)], { type: 'application/json' });
+    }
+
+    function buildExport(ctx, format) {
+      const { city, from, to, res, fields, times, block } = ctx;
+      let idxs = times.map((_, i) => i);
+      if (res === '3h') idxs = idxs.filter(i => i % 3 === 0);
+
+      const header = ['Time', ...fields.map(fieldLabel)];
+      const rows = idxs.map(i => [times[i], ...fields.map(f => {
+        const v = (block[f] || [])[i];
+        return v === undefined ? null : v;
+      })]);
+      const fname = `weather_${safeName(city)}_${from}_${to}_${res}.${format}`;
+
+      return { blob: serializeTable(header, rows, format, () => buildMarkdown(ctx), ctx.meta), fname, rows };
+    }
+
+    function reportExport(out, { blob, fname, rows }) {
+      const kb = Math.max(1, Math.round(blob.size / 1024));
+      // Restate the range actually exported — the second place a mistyped date
+      // shows up, after the echo under the inputs.
+      let h = `<div class="ok-box">✅ Downloaded: ${rows.length.toLocaleString()} rows · ` +
+              `${esc(rows[0][0])} → ${esc(rows[rows.length - 1][0])} · ` +
+              `${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
+      // Archive data lags ~5 days, so a range ending near today can finish on
+      // valueless rows; flag them instead of letting them pass as data.
+      let empty = 0;
+      while (empty < rows.length && rows[rows.length - 1 - empty].slice(1).every(v => v === null)) empty++;
+      if (empty) {
+        h += `<div class="info-box">ℹ️ The last ${empty.toLocaleString()} row(s) have no values yet — archive data lags ~5 days.</div>`;
+      }
+      out.innerHTML = h;
+    }
+
+    // ---------- History View export ----------
+    let lastView = null;
+
+    function viewExportBar() {
+      return '<div class="dl-row" style="margin-top:16px">' +
+        '<button class="btn btn-purple" style="width:auto" onclick="exportView(\'xlsx\')">📥 XLSX</button>' +
+        '<button class="btn btn-gray" onclick="exportView(\'csv\')">📄 CSV</button>' +
+        '<button class="btn btn-gray" onclick="exportView(\'json\')">🧾 JSON</button>' +
+        '<button class="btn btn-gray" onclick="exportView(\'md\')">📝 MD</button>' +
+        '<button class="btn btn-gray" onclick="exportChartsPNG()">🖼️ Charts PNG</button>' +
+        '</div><div id="hvExportMsg"></div>';
+    }
+
+    function exportView(format) {
+      const msg = document.getElementById('hvExportMsg');
+      if (!lastView || !msg) return;
+      try {
+        const exp = buildExport(lastView, format);
+        downloadBlob(exp.blob, exp.fname);
+        reportExport(msg, exp);
+      } catch (err) {
+        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      }
+    }
+
+    // Chart.js canvases are transparent, so the charts are stacked onto one
+    // opaque canvas — otherwise the PNG is unreadable outside a dark page.
+    async function exportChartsPNG() {
+      const msg = document.getElementById('hvExportMsg');
+      if (!msg) return;
+      if (!viewCharts.length) { msg.innerHTML = '<div class="error-box">No charts to export.</div>'; return; }
+      try {
+        const imgs = await Promise.all(viewCharts.map(c => new Promise((resolve, reject) => {
+          const im = new Image();
+          im.onload = () => resolve(im);
+          im.onerror = () => reject(new Error('Chart image failed to render.'));
+          im.src = c.toBase64Image();
+        })));
+        const gap = 18;
+        const w = imgs.reduce((a, i) => Math.max(a, i.width), 0);
+        const h = imgs.reduce((a, i) => a + i.height, 0) + gap * (imgs.length - 1);
+        const cv = document.createElement('canvas');
+        cv.width = w;
+        cv.height = h;
+        const g = cv.getContext('2d');
+        g.fillStyle = '#0b1020';
+        g.fillRect(0, 0, w, h);
+        let y = 0;
+        imgs.forEach(i => { g.drawImage(i, 0, y); y += i.height + gap; });
+        const name = `weather_${safeName(lastView.city)}_${lastView.from}_${lastView.to}_charts.png`;
+        cv.toBlob(b => {
+          downloadBlob(b, name);
+          msg.innerHTML = `<div class="ok-box">✅ Saved ${imgs.length} chart(s): ${esc(name)}</div>`;
+        }, 'image/png');
+      } catch (err) {
+        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      }
+    }
+
     // ---------- DATA DOWNLOADER ----------
     async function runDownload(format) {
       const city = document.getElementById('dlCity').value.trim();
-      const from = document.getElementById('dlFrom').value;
-      const to = document.getElementById('dlTo').value;
+      const from = dateValue('dlFrom');
+      const to = dateValue('dlTo');
       const out = document.getElementById('dlResult');
 
       if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
@@ -1046,48 +1553,259 @@
         let times = block.time || [];
         if (!times.length) throw new Error('No data returned for this range.');
 
-        let idxs = times.map((_, i) => i);
-        if (res === '3h') idxs = idxs.filter(i => i % 3 === 0);
-
-        const header = ['Time', ...fields.map(fieldLabel)];
-        const rows = idxs.map(i => [times[i], ...fields.map(f => {
-          const v = (block[f] || [])[i];
-          return v === undefined ? null : v;
-        })]);
-
-        const fname = `weather_${city.replace(/[^a-zA-Z0-9_-]+/g, '_')}_${from}_${to}_${res}`;
-        let blob;
-        if (format === 'xlsx') {
-          if (typeof XLSX === 'undefined') throw new Error('SheetJS failed to load.');
-          const ws = XLSX.utils.aoa_to_sheet([header, ...rows]);
-          const wb = XLSX.utils.book_new();
-          XLSX.utils.book_append_sheet(wb, ws, 'Weather');
-          const ab = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
-          blob = new Blob([ab], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-        } else if (format === 'csv') {
-          const csv = [header, ...rows].map(r =>
-            r.map(v => {
-              const s = String(v === null || v === undefined ? '' : v);
-              return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-            }).join(',')
-          ).join('\r\n');
-          blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8' });
-        } else {
-          blob = new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' });
-        }
-
-        const a = document.createElement('a');
-        a.href = URL.createObjectURL(blob);
-        a.download = fname + '.' + format;
-        a.click();
-        URL.revokeObjectURL(a.href);
-
-        const kb = Math.max(1, Math.round(blob.size / 1024));
-        out.innerHTML = `<div class="ok-box">✅ Downloaded: ${rows.length.toLocaleString()} rows, ${esc(fname + '.' + format)} (${kb.toLocaleString()} KB)</div>`;
+        const exp = buildExport({ city, loc, meta: d, times, fields, block, res, from, to }, format);
+        downloadBlob(exp.blob, exp.fname);
+        reportExport(out, exp);
       } catch (err) {
         out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
       }
     }
+
+    // ---------- CLIMATE ANOMALY ----------
+    // A year's monthly mean temperature against the 1991–2020 normal, the WMO's
+    // current 30-year reference period. Both series come from the same archive
+    // with the same unit setting, so the anomaly is a plain subtraction and
+    // stays correct in °C or °F (a difference of two °F values is in °F).
+    const BASE_FROM = '1991-01-01';
+    const BASE_TO = '2020-12-31';
+    let anomChart = null;
+    let lastAnomaly = null;
+
+    // mean of the daily means for each calendar month, over whatever years the
+    // series covers; months with no readings stay null rather than becoming 0
+    function monthlyMeans(times, values) {
+      const acc = Array.from({ length: 12 }, () => ({ sum: 0, n: 0 }));
+      times.forEach((t, i) => {
+        const v = values[i];
+        if (v === null || v === undefined || !Number.isFinite(Number(v))) return;
+        const m = Number(t.slice(5, 7)) - 1;
+        acc[m].sum += Number(v);
+        acc[m].n++;
+      });
+      return acc.map(a => (a.n ? a.sum / a.n : null));
+    }
+
+    const signed = (v) => (v > 0 ? '+' : '') + (Math.round(v * 10) / 10);
+    const round1 = (v) => (v === null || v === undefined ? null : Math.round(v * 10) / 10);
+
+    function exportAnomaly(format) {
+      const msg = document.getElementById('anExportMsg');
+      if (!lastAnomaly || !msg) return;
+      const { city, loc, year, baseM, targM, anom, sym, months } = lastAnomaly;
+      const header = ['Month', `${year} mean ${sym}`, `1991-2020 normal ${sym}`, `Anomaly ${sym}`];
+      const rows = MONTH_FULL.map((name, i) => [name, round1(targM[i]), round1(baseM[i]), round1(anom[i])]);
+      const fname = `anomaly_${safeName(city)}_${year}_vs_1991-2020.${format}`;
+      try {
+        const md = () => {
+          const L = [];
+          L.push(`# Climate anomaly — ${loc.name}${loc.country_code ? ', ' + loc.country_code : ''}`, '');
+          L.push('| | |', '|---|---|');
+          L.push(`| Coordinates | ${loc.latitude}, ${loc.longitude} |`);
+          L.push(`| Year compared | ${year} |`);
+          L.push(`| Baseline | ${BASE_FROM} → ${BASE_TO} (WMO 30-year normal) |`);
+          L.push(`| Months with data | ${months} of 12 |`);
+          L.push(`| Unit | ${sym} |`);
+          L.push('| Source | Open-Meteo archive (ERA5) |');
+          L.push(`| Generated | ${TODAY} |`, '');
+          L.push(`| ${header.join(' | ')} |`, `|---|---:|---:|---:|`);
+          rows.forEach(r => L.push(`| ${r.map(v => (v === null ? '—' : v)).join(' | ')} |`));
+          return L.join('\n');
+        };
+        const blob = serializeTable(header, rows, format, md, { city, year, baseline: [BASE_FROM, BASE_TO], unit: sym, months: rows });
+        downloadBlob(blob, fname);
+        const kb = Math.max(1, Math.round(blob.size / 1024));
+        msg.innerHTML = `<div class="ok-box">✅ Downloaded: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
+      } catch (err) {
+        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      }
+    }
+
+    async function runAnomaly() {
+      const city = document.getElementById('anCity').value.trim();
+      const out = document.getElementById('anResult');
+      const btn = document.getElementById('anBtn');
+
+      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+      const year = parseInt(document.getElementById('anYear').value, 10);
+      if (!Number.isFinite(year) || year < 1940 || year > THIS_YEAR) {
+        out.innerHTML = `<div class="error-box">Pick a year between 1940 and ${THIS_YEAR}.</div>`;
+        return;
+      }
+
+      out.innerHTML = '<div class="spinner"></div><p style="text-align:center;color:#94a3b8;font-size:0.85rem">' +
+                      'Loading 30 years of baseline data — this takes a few seconds…</p>';
+      btn.disabled = true;
+      try {
+        const loc = await geocode(city);
+        const ask = (start, end) => postJSON('/api/history-daily', {
+          latitude: loc.latitude, longitude: loc.longitude,
+          start_date: start, end_date: end,
+          fields: ['temperature_2m_mean'], units: unitsBody()
+        });
+        // The current year has no December yet, so it stops at today.
+        const yearEnd = year === THIS_YEAR ? TODAY : isoOf(year, 12, 31);
+        const [base, target] = await Promise.all([ask(BASE_FROM, BASE_TO), ask(isoOf(year, 1, 1), yearEnd)]);
+
+        const bTimes = (base.daily || {}).time || [];
+        const tTimes = (target.daily || {}).time || [];
+        if (!bTimes.length) throw new Error('No baseline data for this location.');
+        if (!tTimes.length) throw new Error(`No archive data for ${year} at this location.`);
+
+        const baseM = monthlyMeans(bTimes, base.daily.temperature_2m_mean || []);
+        const targM = monthlyMeans(tTimes, target.daily.temperature_2m_mean || []);
+        const anom = targM.map((v, i) => (v === null || baseM[i] === null ? null : v - baseM[i]));
+        const have = anom.filter(v => v !== null);
+        if (!have.length) throw new Error(`No month of ${year} overlaps the baseline yet.`);
+        const yearAnom = have.reduce((a, b) => a + b, 0) / have.length;
+        const sym = tempSym();
+
+        if (anomChart) { anomChart.destroy(); anomChart = null; }
+        lastAnomaly = { city, loc, year, baseM, targM, anom, sym, months: have.length };
+
+        let h = `<div class="loc-header">${esc(loc.name)}, ${esc(loc.country_code || '')}</div>`;
+        h += `<div class="loc-sub">${esc(target.latitude)}, ${esc(target.longitude)} · ${esc(target.timezone || '')} · ` +
+             `baseline ${BASE_FROM} → ${BASE_TO}</div>`;
+        h += `<div class="anom-head ${yearAnom >= 0 ? 'warm' : 'cool'}">${esc(signed(yearAnom))} ${esc(sym)}</div>`;
+        h += `<div class="anom-sub">${esc(year)} was ${yearAnom >= 0 ? 'warmer' : 'cooler'} than the 1991–2020 normal — ` +
+             `mean of ${have.length} monthly anomal${have.length === 1 ? 'y' : 'ies'}.</div>`;
+        h += '<div class="chart-wrap"><canvas id="anomCanvas"></canvas></div>';
+        h += '<div class="table-wrap"><table><tr><th>Month</th>' +
+             `<th>${esc(year)} mean ${esc(sym)}</th><th>1991–2020 ${esc(sym)}</th><th>Anomaly ${esc(sym)}</th></tr>`;
+        MONTH_FULL.forEach((name, i) => {
+          const a = anom[i];
+          h += `<tr><td>${esc(name)}</td>` +
+               `<td>${targM[i] === null ? '—' : esc(round1(targM[i]))}</td>` +
+               `<td>${baseM[i] === null ? '—' : esc(round1(baseM[i]))}</td>` +
+               `<td class="${a === null ? '' : a >= 0 ? 'warm' : 'cool'}">${a === null ? '—' : esc(signed(a))}</td></tr>`;
+        });
+        h += '</table></div>';
+        h += '<div class="dl-row" style="margin-top:14px">' +
+             '<button class="btn btn-amber" style="width:auto" onclick="exportAnomaly(\'xlsx\')">📥 XLSX</button>' +
+             '<button class="btn btn-gray" onclick="exportAnomaly(\'csv\')">📄 CSV</button>' +
+             '<button class="btn btn-gray" onclick="exportAnomaly(\'json\')">🧾 JSON</button>' +
+             '<button class="btn btn-gray" onclick="exportAnomaly(\'md\')">📝 MD</button>' +
+             '</div><div id="anExportMsg"></div>';
+        out.innerHTML = h;
+
+        const ctx = document.getElementById('anomCanvas');
+        if (ctx && typeof Chart !== 'undefined') {
+          anomChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: MONTH_NAMES,
+              datasets: [{
+                label: `${year} vs 1991–2020 (${sym})`,
+                data: anom,
+                backgroundColor: anom.map(v => (v === null ? '#334155' : v >= 0 ? '#ef4444' : '#3b82f6'))
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { labels: { color: '#e0e0e0', boxWidth: 14, font: { size: 11 } } } },
+              scales: {
+                x: { grid: { color: 'rgba(255,255,255,0.08)' }, ticks: { color: '#a0aec0' } },
+                y: {
+                  grid: { color: 'rgba(255,255,255,0.08)' },
+                  ticks: { color: '#a0aec0' },
+                  title: { display: true, text: 'Anomaly ' + sym, color: '#a0aec0' }
+                }
+              }
+            }
+          });
+        }
+      } catch (err) {
+        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    // ---------- settings persistence ----------
+    // City, units, resolution, field selection and dates survive a reload, so
+    // the app opens where it was left rather than on the built-in defaults.
+    const STORE_KEY = 'weatherweb.v1';
+    const CITY_IDS = ['fcCity', 'hvCity', 'dlCity', 'anCity'];
+
+    const inputVal = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    const checkedRes = (id) => {
+      const el = document.querySelector(`#${id} input:checked`);
+      return el ? el.value : '';
+    };
+
+    function saveSettings() {
+      if (!settingsReady) return;
+      try {
+        localStorage.setItem(STORE_KEY, JSON.stringify({
+          cities: Object.fromEntries(CITY_IDS.map(id => [id, inputVal(id)])),
+          year: inputVal('anYear'),
+          units: { ...UNITS },
+          res: { hv: checkedRes('hvRes'), dl: checkedRes('dlRes') },
+          fields: { hv: checkedKeys('hvPills'), dl: checkedKeys('dlPills') },
+          dates: {
+            hvFrom: dateValue('hvFrom'), hvTo: dateValue('hvTo'),
+            dlFrom: dateValue('dlFrom'), dlTo: dateValue('dlTo')
+          }
+        }));
+      } catch (err) { /* private mode or quota — settings simply do not persist */ }
+    }
+
+    function loadSettings() {
+      let s = null;
+      try { s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (err) { s = null; }
+      if (!s) return;
+
+      if (s.cities) CITY_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el && s.cities[id]) el.value = s.cities[id];
+      });
+      if (s.year) { const el = document.getElementById('anYear'); if (el) el.value = s.year; }
+
+      if (s.units) {
+        Object.keys(UNITS).forEach(k => { if (s.units[k]) UNITS[k] = s.units[k]; });
+        document.querySelectorAll('.seg-btns').forEach(seg => {
+          seg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.val === UNITS[seg.dataset.unit]));
+        });
+      }
+
+      if (s.res) [['hv', 'hvRes'], ['dl', 'dlRes']].forEach(([key, id]) => {
+        const v = s.res[key];
+        const radio = v && document.querySelector(`#${id} input[value="${v}"]`);
+        if (!radio) return;
+        radio.checked = true;
+        document.querySelectorAll(`input[name="${radio.name}"]`).forEach(r => {
+          r.closest('.pill').classList.toggle('on', r.checked);
+        });
+      });
+
+      if (s.fields) [['hv', 'hvPills'], ['dl', 'dlPills']].forEach(([key, id]) => {
+        const list = s.fields[key];
+        if (!Array.isArray(list) || !list.length) return;
+        document.querySelectorAll(`#${id} .pill`).forEach(p => {
+          const on = list.includes(p.dataset.pill);
+          p.classList.toggle('on', on);
+          p.querySelector('input').checked = on;
+        });
+      });
+
+      if (s.dates) Object.keys(s.dates).forEach(id => {
+        if (DATE_FIELDS[id] && DATE_RE.test(s.dates[id] || '')) setDateField(id, s.dates[id]);
+      });
+    }
+
+    loadSettings();
+    settingsReady = true;
+    updatePillAvailability('dlRes', 'dlPills');
+    updatePillAvailability('hvRes', 'hvPills');
+
+    CITY_IDS.concat('anYear').forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('input', saveSettings);
+    });
+    document.addEventListener('change', (e) => {
+      if (e.target.matches && e.target.matches('.pill input')) saveSettings();
+    });
+    document.querySelectorAll('.seg-btns').forEach(seg => seg.addEventListener('click', saveSettings));
   </script>
 </body>
 </html>
