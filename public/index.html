@@ -30,7 +30,7 @@
     .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
 
     /* HERO */
-    .hero { text-align: center; padding: 48px 20px 34px; }
+    .hero { text-align: center; padding: 62px 20px 34px; }
     .hero h1 {
       font-size: 2.8rem;
       background: linear-gradient(135deg, #3b82f6, #0ea5e9, #8b5cf6);
@@ -292,6 +292,31 @@
       background: rgba(255, 255, 255, 0.12);
       border-color: rgba(59, 130, 246, 0.6);
     }
+    /* LANGUAGE SWITCHER — above the modal layer (z-index 1000) so the language
+       can be changed while a panel is open */
+    .lang-bar {
+      position: fixed; top: 12px; right: 12px; z-index: 1100;
+      display: flex; gap: 3px; padding: 4px;
+      border-radius: 999px;
+      background: rgba(15, 23, 42, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      box-shadow: 0 8px 22px -10px rgba(0, 0, 0, 0.8);
+    }
+    .lang-bar button {
+      min-width: 42px; min-height: 34px; padding: 0 10px;
+      border: none; border-radius: 999px; background: transparent;
+      color: #94a3b8; font-weight: 700; font-size: 0.82rem; cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .lang-bar button:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+    .lang-bar button.on { background: linear-gradient(135deg, #3b82f6, #0ea5e9); color: #fff; }
+    @media (max-width: 600px) {
+      .lang-bar { top: 8px; right: 8px; padding: 3px; }
+      .lang-bar button { min-width: 36px; min-height: 30px; padding: 0 7px; font-size: 0.76rem; }
+    }
+
     .date-echo { margin-top: 5px; font-size: 0.78rem; color: #94a3b8; min-height: 1.1em; }
 
     /* DATE PARTS — explicit Year / Month / Day controls. A native
@@ -544,93 +569,90 @@
   </style>
 </head>
 <body>
+  <nav class="lang-bar" aria-label="Language">
+    <button type="button" data-lang="en">EN</button><button type="button" data-lang="hu">HU</button><button type="button" data-lang="de">DE</button><button type="button" data-lang="ro">RO</button>
+  </nav>
   <div class="container">
     <!-- HERO -->
     <div class="hero">
       <h1>⛅ Weather</h1>
-      <p>Live forecast, 85 years of history, and bulk data export. Open-Meteo, keyless.</p>
+      <p data-i18n="hero.sub"></p>
     </div>
 
     <!-- KEYLESS-API NOTICE -->
     <div class="api-note glass">
-      🔓 <strong>No API key needed — and none is shared.</strong>
-      Every panel reads from <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>,
-      which is free and keyless for non-commercial use: no sign-up, no account, no personal key in this page.
-      The only ceiling is Open-Meteo's
-      <a href="https://open-meteo.com/en/pricing" target="_blank" rel="noopener">fair-use limit</a>
-      (about 10,000 requests a day). If you want your own quota, you can run this site yourself —
-      the source is on <a href="https://github.com/laci141/weather-web" target="_blank" rel="noopener">GitHub</a>.
+      🔓 <span data-i18n-html="api.note"></span>
     </div>
 
     <!-- BENTO GRID -->
     <div class="bento-grid">
       <div class="bento-card glass blue" onclick="openModal('forecastModal')">
         <div class="bento-icon">🌡️</div>
-        <h3>Current Weather</h3>
-        <p>Live conditions for any city — temperature, humidity, wind, precipitation.</p>
-        <button class="card-btn">Open</button>
+        <h3 data-i18n="card.current.h"></h3>
+        <p data-i18n="card.current.p"></p>
+        <button class="card-btn" data-i18n="btn.open"></button>
       </div>
       <div class="bento-card glass purple" onclick="openModal('viewModal')">
         <div class="bento-icon">📅</div>
-        <h3>Historical View</h3>
-        <p>Back to 1940 — daily, hourly, or 15-min charts &amp; tables, pick from every field Open-Meteo has.</p>
-        <button class="card-btn">Open</button>
+        <h3 data-i18n="card.history.h"></h3>
+        <p data-i18n="card.history.p"></p>
+        <button class="card-btn" data-i18n="btn.open"></button>
       </div>
       <div class="bento-card glass green" onclick="openModal('dlModal')">
         <div class="bento-icon">💾</div>
-        <h3>Data Downloader</h3>
-        <p>Bulk export — daily, hourly, 3-hourly or 15-min resolution → XLSX, CSV, JSON or Markdown.</p>
-        <button class="card-btn">Open</button>
+        <h3 data-i18n="card.download.h"></h3>
+        <p data-i18n="card.download.p"></p>
+        <button class="card-btn" data-i18n="btn.open"></button>
       </div>
       <div class="bento-card glass amber" onclick="openModal('anomModal')">
         <div class="bento-icon">🌡️</div>
-        <h3>Climate Anomaly</h3>
-        <p>How much warmer, cooler, wetter or drier was a year than a reference period you pick? Month by month, back to 1940.</p>
-        <button class="card-btn">Open</button>
+        <h3 data-i18n="card.anomaly.h"></h3>
+        <p data-i18n="card.anomaly.p"></p>
+        <button class="card-btn" data-i18n="btn.open"></button>
       </div>
       <div class="bento-card glass teal" onclick="openModal('trendModal')">
         <div class="bento-icon">📊</div>
-        <h3>Climate Trends</h3>
-        <p>Temperature or precipitation, year by year, over the last 10 to 80 years — each year against a reference period you pick, with the trend line.</p>
-        <button class="card-btn">Open</button>
+        <h3 data-i18n="card.trends.h"></h3>
+        <p data-i18n="card.trends.p"></p>
+        <button class="card-btn" data-i18n="btn.open"></button>
       </div>
       <div class="bento-card glass violet" onclick="openModal('cmpModal')">
         <div class="bento-icon">⚖️</div>
-        <h3>City Comparison</h3>
-        <p>Two cities side by side over 5 to 30 years — temperature and precipitation, year by year, with the average difference.</p>
-        <button class="card-btn">Open</button>
+        <h3 data-i18n="card.compare.h"></h3>
+        <p data-i18n="card.compare.p"></p>
+        <button class="card-btn" data-i18n="btn.open"></button>
       </div>
       <div class="bento-card glass rose wide" onclick="openModal('thModal')">
         <div class="bento-icon">🔥</div>
-        <h3>Threshold Days</h3>
-        <p>How many days crossed a limit each year — above 30 to 49 °C, hot days that also stayed warm overnight, days over 10 to 150 mm of rain, and the longest run without rain.</p>
-        <button class="card-btn">Open</button>
+        <h3 data-i18n="card.threshold.h"></h3>
+        <p data-i18n="card.threshold.p"></p>
+        <button class="card-btn" data-i18n="btn.open"></button>
       </div>
     </div>
 
     <!-- GLOBAL UNIT TOGGLES -->
     <div class="units-bar glass">
-      <span class="units-title">⚙️ Units</span>
+      <span class="units-title">⚙️ <span data-i18n="units.title"></span></span>
       <span class="seg">
-        <span class="seg-label">🌡️ Temp:</span>
+        <span class="seg-label">🌡️ <span data-i18n="units.temp"></span></span>
         <span class="seg-btns" data-unit="temp">
           <button class="on" data-val="celsius">°C</button><button data-val="fahrenheit">°F</button>
         </span>
       </span>
       <span class="seg">
-        <span class="seg-label">💨 Wind:</span>
+        <span class="seg-label">💨 <span data-i18n="units.wind"></span></span>
         <span class="seg-btns" data-unit="wind">
           <button class="on" data-val="kmh">km/h</button><button data-val="mph">mph</button>
         </span>
       </span>
       <span class="seg">
-        <span class="seg-label">🌧️ Precip:</span>
+        <span class="seg-label">🌧️ <span data-i18n="units.precip"></span></span>
         <span class="seg-btns" data-unit="precip">
           <button class="on" data-val="mm">mm</button><button data-val="inch">inch</button>
         </span>
       </span>
       <span class="seg">
-        <span class="seg-label">🖼️ Image:</span>
+        <span class="seg-label">🖼️ <span data-i18n="units.image"></span></span>
         <span class="seg-btns" data-unit="img">
           <button data-val="1">1×</button><button class="on" data-val="2">2×</button><button data-val="3">3×</button>
         </span>
@@ -642,12 +664,12 @@
   <div class="modal" id="forecastModal" style="--a1:#3b82f6; --a2:#0ea5e9">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('forecastModal')">×</button>
-      <h2>🌡️ Current Weather</h2>
+      <h2>🌡️ <span data-i18n="m.current"></span></h2>
       <div class="form-group">
-        <label for="fcCity">City</label>
-        <input type="text" id="fcCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runForecast()">
+        <label for="fcCity" data-i18n="lbl.city"></label>
+        <input type="text" id="fcCity" data-i18n-ph="ph.city" onkeydown="if(event.key==='Enter')runForecast()">
       </div>
-      <button class="btn btn-blue" id="fcBtn" onclick="runForecast()">Get Forecast</button>
+      <button class="btn btn-blue" id="fcBtn" onclick="runForecast()" data-i18n="btn.getForecast"></button>
       <div id="fcResult"></div>
     </div>
   </div>
@@ -656,31 +678,31 @@
   <div class="modal" id="viewModal" style="--a1:#8b5cf6; --a2:#d946ef">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('viewModal')">×</button>
-      <h2>📅 Historical View (1940–today)</h2>
+      <h2>📅 <span data-i18n="m.history"></span></h2>
       <div class="preset-row" id="hvPresets"></div>
       <div class="form-row">
         <div class="form-group">
-          <label for="hvCity">City</label>
-          <input type="text" id="hvCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runView()">
+          <label for="hvCity" data-i18n="lbl.city"></label>
+          <input type="text" id="hvCity" data-i18n-ph="ph.city" onkeydown="if(event.key==='Enter')runView()">
         </div>
         <div class="form-group">
-          <label>From</label>
+          <label data-i18n="lbl.from"></label>
           <div id="hvFrom"></div>
         </div>
         <div class="form-group">
-          <label>To</label>
+          <label data-i18n="lbl.to"></label>
           <div id="hvTo"></div>
         </div>
       </div>
-      <div class="pill-label">Resolution <span style="color:#64748b">(daily ≤35 days · hourly ≤3 days · 15-min ≤1 day, last ~3 months)</span></div>
+      <div class="pill-label"><span data-i18n="lbl.resolution"></span> <span style="color:#64748b" data-i18n="lbl.resHint"></span></div>
       <div class="pill-set" id="hvRes">
-        <label class="pill on" style="--pc:#d946ef"><input type="radio" name="hvres" value="daily" checked>📆 Daily</label>
-        <label class="pill" style="--pc:#d946ef"><input type="radio" name="hvres" value="1h">🕐 1 hour</label>
-        <label class="pill" style="--pc:#d946ef"><input type="radio" name="hvres" value="15min">⏱️ 15 min</label>
+        <label class="pill on" style="--pc:#d946ef"><input type="radio" name="hvres" value="daily" checked>📆 <span data-i18n="res.daily"></span></label>
+        <label class="pill" style="--pc:#d946ef"><input type="radio" name="hvres" value="1h">🕐 <span data-i18n="res.1h"></span></label>
+        <label class="pill" style="--pc:#d946ef"><input type="radio" name="hvres" value="15min">⏱️ <span data-i18n="res.15min"></span></label>
       </div>
-      <div class="pill-label">Fields to display</div>
+      <div class="pill-label" data-i18n="lbl.fieldsDisplay"></div>
       <div class="pill-grid" id="hvPills"></div>
-      <button class="btn btn-purple" id="hvBtn" onclick="runView()">Get History</button>
+      <button class="btn btn-purple" id="hvBtn" onclick="runView()" data-i18n="btn.getHistory"></button>
       <div id="hvResult"></div>
     </div>
   </div>
@@ -689,39 +711,39 @@
   <div class="modal" id="dlModal" style="--a1:#22c55e; --a2:#10b981">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('dlModal')">×</button>
-      <h2>💾 Data Downloader</h2>
+      <h2>💾 <span data-i18n="m.download"></span></h2>
       <div class="preset-row" id="dlPresets"></div>
       <div class="form-row">
         <div class="form-group">
-          <label for="dlCity">City</label>
-          <input type="text" id="dlCity" placeholder="e.g. Oradea">
+          <label for="dlCity" data-i18n="lbl.city"></label>
+          <input type="text" id="dlCity" data-i18n-ph="ph.city">
         </div>
         <div class="form-group">
-          <label>From</label>
+          <label data-i18n="lbl.from"></label>
           <div id="dlFrom"></div>
         </div>
         <div class="form-group">
-          <label>To</label>
+          <label data-i18n="lbl.to"></label>
           <div id="dlTo"></div>
         </div>
       </div>
-      <div class="pill-label">Resolution</div>
+      <div class="pill-label" data-i18n="lbl.resolution"></div>
       <div class="pill-set" id="dlRes">
-        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="daily">📆 Daily</label>
-        <label class="pill on" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="1h" checked>🕐 1 hour</label>
-        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="3h">🕒 3 hours</label>
-        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="15min">⏱️ 15 min</label>
+        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="daily">📆 <span data-i18n="res.daily"></span></label>
+        <label class="pill on" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="1h" checked>🕐 <span data-i18n="res.1h"></span></label>
+        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="3h">🕒 <span data-i18n="res.3h"></span></label>
+        <label class="pill" style="--pc:#0ea5e9"><input type="radio" name="dlres" value="15min">⏱️ <span data-i18n="res.15min"></span></label>
       </div>
-      <div class="pill-label">Fields</div>
+      <div class="pill-label" data-i18n="lbl.fields"></div>
       <div class="pill-grid" id="dlPills"></div>
       <div class="dl-row">
-        <button class="btn btn-green" onclick="runDownload('xlsx')">📥 Download XLSX</button>
-        <button class="btn btn-gray" onclick="runDownload('csv')">📄 Download CSV</button>
-        <button class="btn btn-blue" style="width:auto" onclick="runDownload('json')">🧾 Download JSON</button>
-        <button class="btn btn-gray" onclick="runDownload('md')">📝 Download MD</button>
+        <button class="btn btn-green" onclick="runDownload('xlsx')">📥 <span data-i18n="dl.xlsx"></span></button>
+        <button class="btn btn-gray" onclick="runDownload('csv')">📄 <span data-i18n="dl.csv"></span></button>
+        <button class="btn btn-blue" style="width:auto" onclick="runDownload('json')">🧾 <span data-i18n="dl.json"></span></button>
+        <button class="btn btn-gray" onclick="runDownload('md')">📝 <span data-i18n="dl.md"></span></button>
       </div>
       <p style="color:#64748b;font-size:0.82rem;margin-top:10px">
-        MD = readable summary: header + weekly, monthly and yearly aggregates (not the raw rows).
+        <span data-i18n="dl.mdNote"></span>
       </p>
       <div id="dlResult"></div>
     </div>
@@ -731,25 +753,23 @@
   <div class="modal" id="anomModal" style="--a1:#f59e0b; --a2:#ef4444">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('anomModal')">×</button>
-      <h2>🌡️ Climate Anomaly</h2>
+      <h2>🌡️ <span data-i18n="m.anomaly"></span></h2>
       <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
-        Compares one year against a reference period, month by month — temperature and
-        precipitation in separate tables. The default reference is 1991–2020, the WMO's
-        current 30-year normal, but any period from 1940 on works.
+        <span data-i18n="desc.anomaly"></span>
       </p>
       <div class="form-row">
         <div class="form-group">
-          <label for="anCity">City</label>
-          <input type="text" id="anCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runAnomaly()">
+          <label for="anCity" data-i18n="lbl.city"></label>
+          <input type="text" id="anCity" data-i18n-ph="ph.city" onkeydown="if(event.key==='Enter')runAnomaly()">
         </div>
         <div class="form-group">
-          <label for="anYear">Year to compare</label>
-          <input type="number" id="anYear" min="1940" step="1" inputmode="numeric" placeholder="e.g. 2024">
+          <label for="anYear" data-i18n="lbl.yearCompare"></label>
+          <input type="number" id="anYear" min="1940" step="1" inputmode="numeric" data-i18n-ph="ph.year">
         </div>
       </div>
-      <div class="pill-label">Reference period <span style="color:#64748b">(what each month is measured against)</span></div>
+      <div class="pill-label"><span data-i18n="lbl.reference"></span> <span style="color:#64748b" data-i18n="lbl.refHintMonth"></span></div>
       <div id="anBaseline"></div>
-      <button class="btn btn-amber" id="anBtn" onclick="runAnomaly()">Compare</button>
+      <button class="btn btn-amber" id="anBtn" onclick="runAnomaly()" data-i18n="btn.compare"></button>
       <div id="anResult"></div>
     </div>
   </div>
@@ -758,25 +778,24 @@
   <div class="modal" id="trendModal" style="--a1:#14b8a6; --a2:#06b6d4">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('trendModal')">×</button>
-      <h2>📊 Climate Trends</h2>
+      <h2>📊 <span data-i18n="m.trends"></span></h2>
       <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
-        One bar per year, each measured against the reference period below, with a fitted trend line.
-        Incomplete years are left out so a part-year cannot masquerade as a dry or cool one.
+        <span data-i18n="desc.trends"></span>
       </p>
       <div class="form-group">
-        <label for="trCity">City</label>
-        <input type="text" id="trCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runTrend()">
+        <label for="trCity" data-i18n="lbl.city"></label>
+        <input type="text" id="trCity" data-i18n-ph="ph.city" onkeydown="if(event.key==='Enter')runTrend()">
       </div>
-      <div class="pill-label">Variable</div>
+      <div class="pill-label" data-i18n="lbl.variable"></div>
       <div class="pill-set" id="trVar">
-        <label class="pill on" style="--pc:#ef4444"><input type="radio" name="trvar" value="temp" checked>🌡️ Temperature</label>
-        <label class="pill" style="--pc:#06b6d4"><input type="radio" name="trvar" value="precip">🌧️ Precipitation</label>
+        <label class="pill on" style="--pc:#ef4444"><input type="radio" name="trvar" value="temp" checked>🌡️ <span data-i18n="f.temp"></span></label>
+        <label class="pill" style="--pc:#06b6d4"><input type="radio" name="trvar" value="precip">🌧️ <span data-i18n="f.precip"></span></label>
       </div>
       <div class="pill-label">Period</div>
       <div class="pill-grid" id="trPeriod"></div>
-      <div class="pill-label">Reference period <span style="color:#64748b">(what each year is measured against)</span></div>
+      <div class="pill-label"><span data-i18n="lbl.reference"></span> <span style="color:#64748b" data-i18n="lbl.refHintYear"></span></div>
       <div id="trBaseline"></div>
-      <button class="btn btn-teal" id="trBtn" onclick="runTrend()">Show trend</button>
+      <button class="btn btn-teal" id="trBtn" onclick="runTrend()" data-i18n="btn.showTrend"></button>
       <div id="trResult"></div>
     </div>
   </div>
@@ -785,25 +804,23 @@
   <div class="modal" id="cmpModal" style="--a1:#a78bfa; --a2:#7c3aed">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('cmpModal')">×</button>
-      <h2>⚖️ City Comparison</h2>
+      <h2>⚖️ <span data-i18n="m.compare"></span></h2>
       <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
-        Two cities over the same years, temperature and precipitation in separate tables.
-        Only years that are complete in <em>both</em> cities are used, so a gap on one side
-        cannot show up as a climate difference.
+        <span data-i18n="desc.compare"></span>
       </p>
       <div class="form-row">
         <div class="form-group">
-          <label for="cmpCityA">City A</label>
-          <input type="text" id="cmpCityA" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runCompare()">
+          <label for="cmpCityA" data-i18n="lbl.cityA"></label>
+          <input type="text" id="cmpCityA" data-i18n-ph="ph.city" onkeydown="if(event.key==='Enter')runCompare()">
         </div>
         <div class="form-group">
-          <label for="cmpCityB">City B</label>
-          <input type="text" id="cmpCityB" placeholder="e.g. Budapest" onkeydown="if(event.key==='Enter')runCompare()">
+          <label for="cmpCityB" data-i18n="lbl.cityB"></label>
+          <input type="text" id="cmpCityB" data-i18n-ph="ph.cityB" onkeydown="if(event.key==='Enter')runCompare()">
         </div>
       </div>
       <div class="pill-label">Period</div>
       <div class="pill-grid" id="cmpPeriod"></div>
-      <button class="btn btn-violet" id="cmpBtn" onclick="runCompare()">Compare cities</button>
+      <button class="btn btn-violet" id="cmpBtn" onclick="runCompare()" data-i18n="btn.compareCities"></button>
       <div id="cmpResult"></div>
     </div>
   </div>
@@ -812,34 +829,31 @@
   <div class="modal" id="thModal" style="--a1:#fb7185; --a2:#f97316">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal('thModal')">&times;</button>
-      <h2>&#128293; Threshold Days</h2>
+      <h2>&#128293; <span data-i18n="m.threshold"></span></h2>
       <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
-        Counts of days that cross a limit, year by year. Averages hide what you actually feel &mdash;
-        &ldquo;how many days over 35&nbsp;&deg;C&rdquo; does not. Thresholds are always in &deg;C and mm,
-        whatever the unit toggle says.
+        <span data-i18n="desc.threshold"></span>
       </p>
       <div class="form-group">
-        <label for="thCity">City</label>
-        <input type="text" id="thCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runThresholds()">
+        <label for="thCity" data-i18n="lbl.city"></label>
+        <input type="text" id="thCity" data-i18n-ph="ph.city" onkeydown="if(event.key==='Enter')runThresholds()">
       </div>
       <div class="pill-label">Period</div>
       <div class="pill-grid" id="thPeriod"></div>
-      <div class="pill-label">Rain threshold <span style="color:#64748b">(a wet day is at least this much)</span></div>
+      <div class="pill-label"><span data-i18n="lbl.rainThreshold"></span> <span style="color:#64748b" data-i18n="lbl.rainHint"></span></div>
       <div class="pill-set" id="thWet"></div>
-      <div class="pill-label">Temperature thresholds</div>
+      <div class="pill-label" data-i18n="lbl.tempThresholds"></div>
       <div class="date-parts" style="grid-template-columns:1fr 1fr">
-        <div class="dp-cell"><label for="thHot">Hot day &mdash; daytime maximum</label><select id="thHot"></select></div>
-        <div class="dp-cell"><label for="thNight">Warm night &mdash; overnight minimum</label><select id="thNight"></select></div>
+        <div class="dp-cell"><label for="thHot" data-i18n="lbl.hotDay"></label><select id="thHot"></select></div>
+        <div class="dp-cell"><label for="thNight" data-i18n="lbl.warmNight"></label><select id="thNight"></select></div>
       </div>
-      <button class="btn btn-rose" id="thBtn" onclick="runThresholds()" style="margin-top:16px">Count days</button>
+      <button class="btn btn-rose" id="thBtn" onclick="runThresholds()" style="margin-top:16px" data-i18n="btn.countDays"></button>
       <div id="thResult"></div>
     </div>
   </div>
 
   <div class="footer">
-    <p>Data: <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>
-    (forecast, geocoding, ERA5 archive) — open, keyless APIs. Not professional weather advice.</p>
-    <p style="margin-top:14px"><strong>Sources</strong></p>
+    <p data-i18n-html="foot.data"></p>
+    <p style="margin-top:14px"><strong data-i18n="foot.sources"></strong></p>
     <ul class="src-list">
       <li><a href="https://open-meteo.com/en/docs/historical-weather-api" target="_blank" rel="noopener">Open-Meteo Historical Weather API</a> — the archive behind every panel</li>
       <li><a href="https://rmets.onlinelibrary.wiley.com/doi/10.1002/qj.4803" target="_blank" rel="noopener">Soci et al. (2024), <em>The ERA5 global reanalysis from 1940 to 2022</em></a> — observation counts and the 1979 transition</li>
@@ -866,21 +880,531 @@
     // saveSettings(); the persistence block itself lives at the end of the file.
     let settingsReady = false;
 
+    // ---------- languages ----------
+    // Static markup carries data-i18n / data-i18n-html / data-i18n-ph keys and is
+    // rewritten in place; everything built at runtime goes through t(). Results
+    // already on screen are re-rendered from their cached state so a language
+    // switch never leaves half the panel in the previous language.
+    const LANGS = ['en', 'hu', 'de', 'ro'];
+    const I18N = {
+      en: {
+        'lang.name': 'English',
+        'hero.sub': 'Live forecast, 85 years of history, and bulk data export. Open-Meteo, keyless.',
+        'api.strong': 'No API key needed — and none is shared.',
+        'api.body': 'Every panel reads from {om}, which is free and keyless for non-commercial use: no sign-up, no account, no personal key in this page. The only ceiling is Open-Meteo\'s {limit} (about 10,000 requests a day). If you want your own quota, you can run this site yourself — the source is on {gh}.',
+        'api.limit': 'fair-use limit',
+        'card.current.h': 'Current Weather',
+        'card.current.p': 'Live conditions for any city — temperature, humidity, wind, precipitation.',
+        'card.history.h': 'Historical View',
+        'card.history.p': 'Back to 1940 — daily, hourly, or 15-min charts & tables, pick from every field Open-Meteo has.',
+        'card.download.h': 'Data Downloader',
+        'card.download.p': 'Bulk export — daily, hourly, 3-hourly or 15-min resolution → XLSX, CSV, JSON or Markdown.',
+        'card.anomaly.h': 'Climate Anomaly',
+        'card.anomaly.p': 'How much warmer, cooler, wetter or drier was a year than a reference period you pick? Month by month, back to 1940.',
+        'card.trends.h': 'Climate Trends',
+        'card.trends.p': 'Temperature or precipitation, year by year, over the last 10 to 80 years — each year against a reference period you pick, with the trend line.',
+        'card.compare.h': 'City Comparison',
+        'card.compare.p': 'Two cities side by side over 5 to 30 years — temperature and precipitation, year by year, with the average difference.',
+        'card.threshold.h': 'Threshold Days',
+        'card.threshold.p': 'How many days crossed a limit each year — above 30 to 49 °C, hot days that also stayed warm overnight, days over 10 to 150 mm of rain, and the longest run without rain.',
+        'btn.open': 'Open',
+        'units.title': 'Units',
+        'units.temp': 'Temp:',
+        'units.wind': 'Wind:',
+        'units.precip': 'Precip:',
+        'units.image': 'Image:',
+        'm.current': 'Current Weather',
+        'm.history': 'Historical View (1940–today)',
+        'm.download': 'Data Downloader',
+        'm.anomaly': 'Climate Anomaly',
+        'm.trends': 'Climate Trends',
+        'm.compare': 'City Comparison',
+        'm.threshold': 'Threshold Days',
+        'desc.anomaly': 'Compares one year against a reference period, month by month — temperature and precipitation in separate tables. The default reference is 1991–2020, the WMO\'s current 30-year normal, but any period from 1940 on works.',
+        'desc.trends': 'One bar per year, each measured against the reference period below, with a fitted trend line. Incomplete years are left out so a part-year cannot masquerade as a dry or cool one.',
+        'desc.compare': 'Two cities over the same years, temperature and precipitation in separate tables. Only years that are complete in both cities are used, so a gap on one side cannot show up as a climate difference.',
+        'desc.threshold': 'Counts of days that cross a limit, year by year. Averages hide what you actually feel — “how many days over 35 °C” does not. Thresholds are always in °C and mm, whatever the unit toggle says.',
+        'lbl.city': 'City', 'lbl.cityA': 'City A', 'lbl.cityB': 'City B',
+        'lbl.from': 'From', 'lbl.to': 'To',
+        'lbl.yearCompare': 'Year to compare',
+        'lbl.resolution': 'Resolution',
+        'lbl.resHint': '(daily ≤35 days · hourly ≤3 days · 15-min ≤1 day, last ~3 months)',
+        'lbl.fieldsDisplay': 'Fields to display', 'lbl.fields': 'Fields',
+        'lbl.period': 'Period', 'lbl.variable': 'Variable',
+        'lbl.reference': 'Reference period',
+        'lbl.refHintMonth': '(what each month is measured against)',
+        'lbl.refHintYear': '(what each year is measured against)',
+        'lbl.rainThreshold': 'Rain threshold', 'lbl.rainHint': '(a wet day is at least this much)',
+        'lbl.tempThresholds': 'Temperature thresholds',
+        'lbl.hotDay': 'Hot day — daytime maximum', 'lbl.warmNight': 'Warm night — overnight minimum',
+        'lbl.baseFrom': 'Baseline from', 'lbl.baseTo': 'Baseline to',
+        'lbl.year': 'Year', 'lbl.month': 'Month', 'lbl.day': 'Day',
+        'ph.city': 'e.g. Oradea', 'ph.cityB': 'e.g. Budapest', 'ph.year': 'e.g. 2024',
+        'btn.getForecast': 'Get Forecast', 'btn.getHistory': 'Get History',
+        'btn.compare': 'Compare', 'btn.compareCities': 'Compare cities',
+        'btn.showTrend': 'Show trend', 'btn.countDays': 'Count days',
+        'res.daily': 'Daily', 'res.1h': '1 hour', 'res.3h': '3 hours', 'res.15min': '15 min',
+        'dl.xlsx': 'Download XLSX', 'dl.csv': 'Download CSV', 'dl.json': 'Download JSON', 'dl.md': 'Download MD',
+        'dl.mdNote': 'MD = readable summary: header + weekly, monthly and yearly aggregates (not the raw rows).',
+        'pre.last7': 'Last 7 days', 'pre.last30': 'Last 30 days', 'pre.thisMonth': 'This month',
+        'pre.lastMonth': 'Last month', 'pre.thisYear': 'This year', 'pre.lastYear': 'Last year',
+        'pre.allTime': '1940 → today', 'pre.lastN': 'Last {n} years',
+        'f.temp': 'Temperature', 'f.apptemp': 'Feels like', 'f.humidity': 'Humidity', 'f.dewpoint': 'Dew point',
+        'f.precip': 'Precipitation', 'f.rainsnow': 'Rain/Snow', 'f.pressure': 'Pressure', 'f.cloud': 'Cloud cover',
+        'f.wind': 'Wind speed', 'f.gusts': 'Wind gusts', 'f.winddir': 'Wind direction',
+        'f.sunshine': 'Sunshine', 'f.radiation': 'Radiation',
+        'c.max': 'Max', 'c.min': 'Min', 'c.mean': 'Mean', 'c.feelsMax': 'Feels max', 'c.feelsMin': 'Feels min',
+        'c.feels': 'Feels', 'c.humMax': 'Hum max', 'c.humMin': 'Hum min', 'c.dewMax': 'Dew max',
+        'c.dewMin': 'Dew min', 'c.dew': 'Dew point', 'c.rain': 'Rain', 'c.snow': 'Snow',
+        'c.pressure': 'Pressure', 'c.cloud': 'Cloud', 'c.gusts': 'Gusts', 'c.windDir': 'Wind dir',
+        'c.sunshine': 'Sunshine', 'c.radiation': 'Radiation', 'c.time': 'Time', 'c.temp': 'Temp',
+        'c.wind': 'Wind', 'c.precip': 'Precip', 'c.points': 'Points', 'c.anomaly': 'Anomaly',
+        'c.pctNormal': '% of normal', 'c.difference': 'Difference', 'c.annualMean': 'Annual mean',
+        'c.annualTotal': 'Annual total', 'c.indicator': 'Indicator', 'c.avgPerYear': 'Average per year',
+        'c.perDecade': 'Change per decade', 'c.normal': 'normal',
+        'err.city': 'Please enter a city.', 'err.bothCities': 'Enter both cities.',
+        'err.field': 'Select at least one field.',
+        'err.noData': 'No archive data for this location.',
+        'err.noCharts': 'No charts to export.',
+        'err.year': 'Pick a year between 1940 and {max}.',
+        'err.refYears': 'Enter both reference years.',
+        'err.refRange': 'The reference period must fall between 1940 and {max}.',
+        'err.refOrder': 'The reference period ends before it starts.',
+        'err.refShort': 'Use a reference period of at least 5 years — anything shorter is mostly noise.',
+        'err.fewYears': 'Not enough complete years in this period.',
+        'err.twoYears': 'Fewer than two years are complete in both cities for this period.',
+        'err.noBaseline': 'Not enough {from}–{to} data here to form a reference average.',
+        'err.noOverlap': 'No month of {year} overlaps the {from}–{to} reference period.',
+        'err.error': 'Error',
+        'ok.downloaded': 'Downloaded', 'ok.rows': 'rows', 'ok.saved': 'Saved',
+        'ok.charts': 'chart(s)',
+        'msg.rendering': 'Rendering the image…',
+        'msg.loading': 'Loading — this can take a few seconds…',
+        'msg.fetching': 'Fetching — large ranges can take a few seconds…',
+        'msg.trailing': 'The last {n} row(s) have no values yet — archive data lags ~5 days.',
+        'msg.skipped': 'Skipped as incomplete: {list}.',
+        'msg.preSat': 'Years marked * predate the satellite era (1979) — fewer observations stand behind them.',
+        'msg.langSwitch': 'Language changed — press the button again to refresh this result.',
+        'txt.next7': 'Next 7 days', 'txt.yearByYear': 'Year by year', 'txt.monthByMonth': 'Month by month',
+        'txt.hotDays': 'Hot days', 'txt.wetDry': 'Wet days and dry spells',
+        'txt.completeYears': '{n} complete years',
+        'txt.warmer': 'warmer', 'txt.cooler': 'cooler', 'txt.wetter': 'wetter', 'txt.drier': 'drier',
+        'txt.hotDaysYear': '{n} hot days a year',
+        'txt.elevation': 'elevation', 'txt.baselineYears': '{n} years',
+        'foot.data': 'Data: {om} (forecast, geocoding, ERA5 archive) — open, keyless APIs. Not professional weather advice.',
+        'foot.sources': 'Sources'
+      },
+      hu: {
+        'lang.name': 'Magyar',
+        'hero.sub': 'Élő előrejelzés, 85 év történeti adat és tömeges adatexport. Open-Meteo, kulcs nélkül.',
+        'api.strong': 'Nem kell API kulcs — és nincs is megosztva.',
+        'api.body': 'Minden panel az {om} adatait olvassa, ami nem kereskedelmi célra ingyenes és kulcs nélküli: nincs regisztráció, nincs fiók, nincs személyes kulcs ezen az oldalon. Az egyetlen korlát az Open-Meteo {limit}je (napi kb. 10 000 kérés). Ha saját kvótát szeretnél, magad is futtathatod ezt az oldalt — a forráskód a {gh} oldalon van.',
+        'api.limit': 'méltányos használati korlát',
+        'card.current.h': 'Aktuális időjárás',
+        'card.current.p': 'Élő adatok bármely városra — hőmérséklet, páratartalom, szél, csapadék.',
+        'card.history.h': 'Történeti nézet',
+        'card.history.p': '1940-ig vissza — napi, órás vagy 15 perces grafikonok és táblázatok, az Open-Meteo összes mezőjéből válogatva.',
+        'card.download.h': 'Adatletöltő',
+        'card.download.p': 'Tömeges export — napi, órás, 3 órás vagy 15 perces felbontás → XLSX, CSV, JSON vagy Markdown.',
+        'card.anomaly.h': 'Klíma-anomália',
+        'card.anomaly.p': 'Mennyivel volt melegebb, hidegebb, csapadékosabb vagy szárazabb egy év egy általad választott referencia-időszaknál? Hónapról hónapra, 1940-ig vissza.',
+        'card.trends.h': 'Klímatrendek',
+        'card.trends.p': 'Hőmérséklet vagy csapadék, évről évre, az elmúlt 10–80 évre — minden év egy általad választott referenciához mérve, trendvonallal.',
+        'card.compare.h': 'Városok összehasonlítása',
+        'card.compare.p': 'Két város egymás mellett 5–30 évre — hőmérséklet és csapadék, évről évre, az átlagos eltéréssel.',
+        'card.threshold.h': 'Küszöbnapok',
+        'card.threshold.p': 'Hány nap lépett át egy határt évente — 30–49 °C felett, meleg éjszakával párosuló forró napok, 10–150 mm feletti esőnapok, és a leghosszabb eső nélküli időszak.',
+        'btn.open': 'Megnyitás',
+        'units.title': 'Mértékegységek',
+        'units.temp': 'Hőm.:',
+        'units.wind': 'Szél:',
+        'units.precip': 'Csapadék:',
+        'units.image': 'Kép:',
+        'm.current': 'Aktuális időjárás',
+        'm.history': 'Történeti nézet (1940–ma)',
+        'm.download': 'Adatletöltő',
+        'm.anomaly': 'Klíma-anomália',
+        'm.trends': 'Klímatrendek',
+        'm.compare': 'Városok összehasonlítása',
+        'm.threshold': 'Küszöbnapok',
+        'desc.anomaly': 'Egy évet hasonlít egy referencia-időszakhoz, hónapról hónapra — a hőmérséklet és a csapadék külön táblázatban. Az alapértelmezett referencia az 1991–2020, a WMO jelenlegi 30 éves normálja, de bármely 1940 utáni időszak használható.',
+        'desc.trends': 'Évente egy oszlop, mindegyik az alábbi referencia-időszakhoz mérve, illesztett trendvonallal. A hiányos évek kimaradnak, hogy egy féléves adat ne tűnhessen száraz vagy hűvös évnek.',
+        'desc.compare': 'Két város ugyanazokra az évekre, a hőmérséklet és a csapadék külön táblázatban. Csak azok az évek számítanak, amelyek mindkét városban teljesek, így az egyik oldal adathiánya nem tűnik éghajlati különbségnek.',
+        'desc.threshold': 'Egy határt átlépő napok száma, évről évre. Az átlagok elrejtik, amit valójában érzel — a „hány nap volt 35 °C felett” nem. A küszöbök mindig °C-ban és mm-ben értendők, a mértékegység-kapcsolótól függetlenül.',
+        'lbl.city': 'Város', 'lbl.cityA': 'A város', 'lbl.cityB': 'B város',
+        'lbl.from': 'Kezdet', 'lbl.to': 'Vég',
+        'lbl.yearCompare': 'Vizsgált év',
+        'lbl.resolution': 'Felbontás',
+        'lbl.resHint': '(napi ≤35 nap · órás ≤3 nap · 15 perces ≤1 nap, utolsó ~3 hónap)',
+        'lbl.fieldsDisplay': 'Megjelenítendő mezők', 'lbl.fields': 'Mezők',
+        'lbl.period': 'Időszak', 'lbl.variable': 'Változó',
+        'lbl.reference': 'Referencia-időszak',
+        'lbl.refHintMonth': '(ehhez méri az egyes hónapokat)',
+        'lbl.refHintYear': '(ehhez méri az egyes éveket)',
+        'lbl.rainThreshold': 'Csapadékküszöb', 'lbl.rainHint': '(csapadékos nap legalább ennyi)',
+        'lbl.tempThresholds': 'Hőmérsékleti küszöbök',
+        'lbl.hotDay': 'Forró nap — nappali maximum', 'lbl.warmNight': 'Meleg éjszaka — éjszakai minimum',
+        'lbl.baseFrom': 'Referencia ettől', 'lbl.baseTo': 'Referencia eddig',
+        'lbl.year': 'Év', 'lbl.month': 'Hónap', 'lbl.day': 'Nap',
+        'ph.city': 'pl. Nagyvárad', 'ph.cityB': 'pl. Budapest', 'ph.year': 'pl. 2024',
+        'btn.getForecast': 'Előrejelzés lekérése', 'btn.getHistory': 'Előzmények lekérése',
+        'btn.compare': 'Összehasonlítás', 'btn.compareCities': 'Városok összevetése',
+        'btn.showTrend': 'Trend megjelenítése', 'btn.countDays': 'Napok megszámolása',
+        'res.daily': 'Napi', 'res.1h': '1 óra', 'res.3h': '3 óra', 'res.15min': '15 perc',
+        'dl.xlsx': 'XLSX letöltése', 'dl.csv': 'CSV letöltése', 'dl.json': 'JSON letöltése', 'dl.md': 'MD letöltése',
+        'dl.mdNote': 'MD = olvasható összefoglaló: fejléc + heti, havi és éves összesítés (nem a nyers sorok).',
+        'pre.last7': 'Utolsó 7 nap', 'pre.last30': 'Utolsó 30 nap', 'pre.thisMonth': 'Ez a hónap',
+        'pre.lastMonth': 'Előző hónap', 'pre.thisYear': 'Idén', 'pre.lastYear': 'Tavaly',
+        'pre.allTime': '1940 → ma', 'pre.lastN': 'Utolsó {n} év',
+        'f.temp': 'Hőmérséklet', 'f.apptemp': 'Hőérzet', 'f.humidity': 'Páratartalom', 'f.dewpoint': 'Harmatpont',
+        'f.precip': 'Csapadék', 'f.rainsnow': 'Eső/hó', 'f.pressure': 'Légnyomás', 'f.cloud': 'Felhőzet',
+        'f.wind': 'Szélsebesség', 'f.gusts': 'Széllökés', 'f.winddir': 'Szélirány',
+        'f.sunshine': 'Napsütés', 'f.radiation': 'Sugárzás',
+        'c.max': 'Max', 'c.min': 'Min', 'c.mean': 'Átlag', 'c.feelsMax': 'Hőérzet max', 'c.feelsMin': 'Hőérzet min',
+        'c.feels': 'Hőérzet', 'c.humMax': 'Pára max', 'c.humMin': 'Pára min', 'c.dewMax': 'Harmat max',
+        'c.dewMin': 'Harmat min', 'c.dew': 'Harmatpont', 'c.rain': 'Eső', 'c.snow': 'Hó',
+        'c.pressure': 'Légnyomás', 'c.cloud': 'Felhő', 'c.gusts': 'Széllökés', 'c.windDir': 'Szélirány',
+        'c.sunshine': 'Napsütés', 'c.radiation': 'Sugárzás', 'c.time': 'Idő', 'c.temp': 'Hőm.',
+        'c.wind': 'Szél', 'c.precip': 'Csapadék', 'c.points': 'Mérések', 'c.anomaly': 'Eltérés',
+        'c.pctNormal': 'a normál %-ában', 'c.difference': 'Különbség', 'c.annualMean': 'Évi átlag',
+        'c.annualTotal': 'Évi összeg', 'c.indicator': 'Mutató', 'c.avgPerYear': 'Évi átlag',
+        'c.perDecade': 'Változás évtizedenként', 'c.normal': 'normál',
+        'err.city': 'Adj meg egy várost.', 'err.bothCities': 'Add meg mindkét várost.',
+        'err.field': 'Válassz legalább egy mezőt.',
+        'err.noData': 'Nincs archív adat erre a helyre.',
+        'err.noCharts': 'Nincs exportálható grafikon.',
+        'err.year': 'Válassz évet 1940 és {max} között.',
+        'err.refYears': 'Add meg mindkét referencia-évet.',
+        'err.refRange': 'A referencia-időszaknak 1940 és {max} közé kell esnie.',
+        'err.refOrder': 'A referencia-időszak vége korábbi, mint a kezdete.',
+        'err.refShort': 'Legalább 5 éves referencia-időszakot használj — ennél rövidebb többnyire csak zaj.',
+        'err.fewYears': 'Nincs elég teljes év ebben az időszakban.',
+        'err.twoYears': 'Kettőnél kevesebb év teljes mindkét városban ebben az időszakban.',
+        'err.noBaseline': 'Nincs elég {from}–{to} közötti adat a referencia-átlaghoz.',
+        'err.noOverlap': '{year} egyetlen hónapja sem fedi át a(z) {from}–{to} referencia-időszakot.',
+        'err.error': 'Hiba',
+        'ok.downloaded': 'Letöltve', 'ok.rows': 'sor', 'ok.saved': 'Mentve',
+        'ok.charts': 'grafikon',
+        'msg.rendering': 'Kép készítése…',
+        'msg.loading': 'Betöltés — ez eltarthat néhány másodpercig…',
+        'msg.fetching': 'Lekérés — nagy tartományoknál eltarthat néhány másodpercig…',
+        'msg.trailing': 'Az utolsó {n} sorban még nincs érték — az archívum kb. 5 napot késik.',
+        'msg.skipped': 'Hiányosként kihagyva: {list}.',
+        'msg.preSat': 'A *-gal jelölt évek a műholdas korszak (1979) előttiek — kevesebb megfigyelés áll mögöttük.',
+        'msg.langSwitch': 'Nyelvet váltottál — nyomd meg újra a gombot az eredmény frissítéséhez.',
+        'txt.next7': 'Következő 7 nap', 'txt.yearByYear': 'Évről évre', 'txt.monthByMonth': 'Hónapról hónapra',
+        'txt.hotDays': 'Forró napok', 'txt.wetDry': 'Csapadékos napok és száraz időszakok',
+        'txt.completeYears': '{n} teljes év',
+        'txt.warmer': 'melegebb', 'txt.cooler': 'hidegebb', 'txt.wetter': 'csapadékosabb', 'txt.drier': 'szárazabb',
+        'txt.hotDaysYear': 'évi {n} forró nap',
+        'txt.elevation': 'tengerszint feletti magasság', 'txt.baselineYears': '{n} év',
+        'foot.data': 'Adatok: {om} (előrejelzés, geokódolás, ERA5 archívum) — nyílt, kulcs nélküli API-k. Nem szakmai meteorológiai tanácsadás.',
+        'foot.sources': 'Források'
+      },
+      de: {
+        'lang.name': 'Deutsch',
+        'hero.sub': 'Aktuelle Vorhersage, 85 Jahre Archiv und Massendatenexport. Open-Meteo, ohne Schlüssel.',
+        'api.strong': 'Kein API-Schlüssel nötig — und keiner wird geteilt.',
+        'api.body': 'Jedes Panel liest von {om}, das für nicht-kommerzielle Nutzung kostenlos und schlüssellos ist: keine Anmeldung, kein Konto, kein persönlicher Schlüssel auf dieser Seite. Die einzige Grenze ist das {limit} von Open-Meteo (etwa 10.000 Abfragen pro Tag). Wer ein eigenes Kontingent möchte, kann diese Seite selbst betreiben — der Quellcode liegt auf {gh}.',
+        'api.limit': 'Fair-Use-Limit',
+        'card.current.h': 'Aktuelles Wetter',
+        'card.current.p': 'Live-Werte für jede Stadt — Temperatur, Luftfeuchte, Wind, Niederschlag.',
+        'card.history.h': 'Historische Ansicht',
+        'card.history.p': 'Zurück bis 1940 — tägliche, stündliche oder 15-Minuten-Diagramme und Tabellen, aus allen Feldern von Open-Meteo.',
+        'card.download.h': 'Daten-Download',
+        'card.download.p': 'Massenexport — täglich, stündlich, 3-stündlich oder 15 Minuten → XLSX, CSV, JSON oder Markdown.',
+        'card.anomaly.h': 'Klimaanomalie',
+        'card.anomaly.p': 'Wie viel wärmer, kühler, nasser oder trockener war ein Jahr als ein von dir gewählter Referenzzeitraum? Monat für Monat, zurück bis 1940.',
+        'card.trends.h': 'Klimatrends',
+        'card.trends.p': 'Temperatur oder Niederschlag, Jahr für Jahr, über die letzten 10 bis 80 Jahre — jedes Jahr gegen einen selbst gewählten Referenzzeitraum, mit Trendlinie.',
+        'card.compare.h': 'Städtevergleich',
+        'card.compare.p': 'Zwei Städte nebeneinander über 5 bis 30 Jahre — Temperatur und Niederschlag, Jahr für Jahr, mit der mittleren Differenz.',
+        'card.threshold.h': 'Schwellenwerttage',
+        'card.threshold.p': 'Wie viele Tage pro Jahr eine Grenze überschritten — über 30 bis 49 °C, heiße Tage mit warmer Nacht, Tage über 10 bis 150 mm Regen, und die längste Trockenperiode.',
+        'btn.open': 'Öffnen',
+        'units.title': 'Einheiten',
+        'units.temp': 'Temp.:',
+        'units.wind': 'Wind:',
+        'units.precip': 'Niederschlag:',
+        'units.image': 'Bild:',
+        'm.current': 'Aktuelles Wetter',
+        'm.history': 'Historische Ansicht (1940–heute)',
+        'm.download': 'Daten-Download',
+        'm.anomaly': 'Klimaanomalie',
+        'm.trends': 'Klimatrends',
+        'm.compare': 'Städtevergleich',
+        'm.threshold': 'Schwellenwerttage',
+        'desc.anomaly': 'Vergleicht ein Jahr mit einem Referenzzeitraum, Monat für Monat — Temperatur und Niederschlag in getrennten Tabellen. Standard ist 1991–2020, die aktuelle 30-Jahres-Normalperiode der WMO, aber jeder Zeitraum ab 1940 funktioniert.',
+        'desc.trends': 'Ein Balken pro Jahr, jeweils gegen den Referenzzeitraum unten gemessen, mit angepasster Trendlinie. Unvollständige Jahre bleiben außen vor, damit ein Teiljahr nicht als trocken oder kühl erscheint.',
+        'desc.compare': 'Zwei Städte über dieselben Jahre, Temperatur und Niederschlag in getrennten Tabellen. Nur Jahre, die in beiden Städten vollständig sind, werden verwendet — so wird eine Lücke auf einer Seite nicht zum Klimaunterschied.',
+        'desc.threshold': 'Anzahl der Tage, die eine Grenze überschreiten, Jahr für Jahr. Mittelwerte verbergen, was man tatsächlich spürt — „wie viele Tage über 35 °C“ nicht. Schwellen gelten immer in °C und mm, unabhängig vom Einheitenschalter.',
+        'lbl.city': 'Stadt', 'lbl.cityA': 'Stadt A', 'lbl.cityB': 'Stadt B',
+        'lbl.from': 'Von', 'lbl.to': 'Bis',
+        'lbl.yearCompare': 'Zu vergleichendes Jahr',
+        'lbl.resolution': 'Auflösung',
+        'lbl.resHint': '(täglich ≤35 Tage · stündlich ≤3 Tage · 15 Min ≤1 Tag, letzte ~3 Monate)',
+        'lbl.fieldsDisplay': 'Anzuzeigende Felder', 'lbl.fields': 'Felder',
+        'lbl.period': 'Zeitraum', 'lbl.variable': 'Größe',
+        'lbl.reference': 'Referenzzeitraum',
+        'lbl.refHintMonth': '(woran jeder Monat gemessen wird)',
+        'lbl.refHintYear': '(woran jedes Jahr gemessen wird)',
+        'lbl.rainThreshold': 'Regenschwelle', 'lbl.rainHint': '(ein nasser Tag hat mindestens so viel)',
+        'lbl.tempThresholds': 'Temperaturschwellen',
+        'lbl.hotDay': 'Heißer Tag — Tagesmaximum', 'lbl.warmNight': 'Warme Nacht — Nachtminimum',
+        'lbl.baseFrom': 'Referenz von', 'lbl.baseTo': 'Referenz bis',
+        'lbl.year': 'Jahr', 'lbl.month': 'Monat', 'lbl.day': 'Tag',
+        'ph.city': 'z. B. Oradea', 'ph.cityB': 'z. B. Budapest', 'ph.year': 'z. B. 2024',
+        'btn.getForecast': 'Vorhersage abrufen', 'btn.getHistory': 'Archiv abrufen',
+        'btn.compare': 'Vergleichen', 'btn.compareCities': 'Städte vergleichen',
+        'btn.showTrend': 'Trend anzeigen', 'btn.countDays': 'Tage zählen',
+        'res.daily': 'Täglich', 'res.1h': '1 Stunde', 'res.3h': '3 Stunden', 'res.15min': '15 Min',
+        'dl.xlsx': 'XLSX laden', 'dl.csv': 'CSV laden', 'dl.json': 'JSON laden', 'dl.md': 'MD laden',
+        'dl.mdNote': 'MD = lesbare Zusammenfassung: Kopf + wöchentliche, monatliche und jährliche Aggregate (nicht die Rohdaten).',
+        'pre.last7': 'Letzte 7 Tage', 'pre.last30': 'Letzte 30 Tage', 'pre.thisMonth': 'Dieser Monat',
+        'pre.lastMonth': 'Letzter Monat', 'pre.thisYear': 'Dieses Jahr', 'pre.lastYear': 'Letztes Jahr',
+        'pre.allTime': '1940 → heute', 'pre.lastN': 'Letzte {n} Jahre',
+        'f.temp': 'Temperatur', 'f.apptemp': 'Gefühlt', 'f.humidity': 'Luftfeuchte', 'f.dewpoint': 'Taupunkt',
+        'f.precip': 'Niederschlag', 'f.rainsnow': 'Regen/Schnee', 'f.pressure': 'Luftdruck', 'f.cloud': 'Bewölkung',
+        'f.wind': 'Windgeschwindigkeit', 'f.gusts': 'Windböen', 'f.winddir': 'Windrichtung',
+        'f.sunshine': 'Sonnenschein', 'f.radiation': 'Strahlung',
+        'c.max': 'Max', 'c.min': 'Min', 'c.mean': 'Mittel', 'c.feelsMax': 'Gefühlt max', 'c.feelsMin': 'Gefühlt min',
+        'c.feels': 'Gefühlt', 'c.humMax': 'Feuchte max', 'c.humMin': 'Feuchte min', 'c.dewMax': 'Taupunkt max',
+        'c.dewMin': 'Taupunkt min', 'c.dew': 'Taupunkt', 'c.rain': 'Regen', 'c.snow': 'Schnee',
+        'c.pressure': 'Luftdruck', 'c.cloud': 'Wolken', 'c.gusts': 'Böen', 'c.windDir': 'Windricht.',
+        'c.sunshine': 'Sonne', 'c.radiation': 'Strahlung', 'c.time': 'Zeit', 'c.temp': 'Temp.',
+        'c.wind': 'Wind', 'c.precip': 'Niederschl.', 'c.points': 'Messwerte', 'c.anomaly': 'Abweichung',
+        'c.pctNormal': '% des Normals', 'c.difference': 'Differenz', 'c.annualMean': 'Jahresmittel',
+        'c.annualTotal': 'Jahressumme', 'c.indicator': 'Kennzahl', 'c.avgPerYear': 'Mittel pro Jahr',
+        'c.perDecade': 'Änderung pro Jahrzehnt', 'c.normal': 'Normal',
+        'err.city': 'Bitte eine Stadt eingeben.', 'err.bothCities': 'Bitte beide Städte eingeben.',
+        'err.field': 'Mindestens ein Feld auswählen.',
+        'err.noData': 'Keine Archivdaten für diesen Ort.',
+        'err.noCharts': 'Keine Diagramme zum Exportieren.',
+        'err.year': 'Wähle ein Jahr zwischen 1940 und {max}.',
+        'err.refYears': 'Bitte beide Referenzjahre eingeben.',
+        'err.refRange': 'Der Referenzzeitraum muss zwischen 1940 und {max} liegen.',
+        'err.refOrder': 'Der Referenzzeitraum endet vor seinem Beginn.',
+        'err.refShort': 'Nutze mindestens 5 Jahre als Referenz — kürzer ist überwiegend Rauschen.',
+        'err.fewYears': 'Nicht genug vollständige Jahre in diesem Zeitraum.',
+        'err.twoYears': 'Weniger als zwei Jahre sind in beiden Städten vollständig.',
+        'err.noBaseline': 'Nicht genug Daten von {from}–{to} für einen Referenzmittelwert.',
+        'err.noOverlap': 'Kein Monat aus {year} überlappt den Referenzzeitraum {from}–{to}.',
+        'err.error': 'Fehler',
+        'ok.downloaded': 'Geladen', 'ok.rows': 'Zeilen', 'ok.saved': 'Gespeichert',
+        'ok.charts': 'Diagramm(e)',
+        'msg.rendering': 'Bild wird erzeugt…',
+        'msg.loading': 'Lädt — das dauert einige Sekunden…',
+        'msg.fetching': 'Abruf — große Zeiträume dauern einige Sekunden…',
+        'msg.trailing': 'Die letzten {n} Zeile(n) haben noch keine Werte — das Archiv hinkt ~5 Tage hinterher.',
+        'msg.skipped': 'Als unvollständig übersprungen: {list}.',
+        'msg.preSat': 'Mit * markierte Jahre liegen vor der Satellitenära (1979) — dahinter stehen deutlich weniger Messungen.',
+        'msg.langSwitch': 'Sprache gewechselt — Taste erneut drücken, um dieses Ergebnis zu aktualisieren.',
+        'txt.next7': 'Nächste 7 Tage', 'txt.yearByYear': 'Jahr für Jahr', 'txt.monthByMonth': 'Monat für Monat',
+        'txt.hotDays': 'Heiße Tage', 'txt.wetDry': 'Nasse Tage und Trockenperioden',
+        'txt.completeYears': '{n} vollständige Jahre',
+        'txt.warmer': 'wärmer', 'txt.cooler': 'kühler', 'txt.wetter': 'nasser', 'txt.drier': 'trockener',
+        'txt.hotDaysYear': '{n} heiße Tage pro Jahr',
+        'txt.elevation': 'Höhe', 'txt.baselineYears': '{n} Jahre',
+        'foot.data': 'Daten: {om} (Vorhersage, Geokodierung, ERA5-Archiv) — offene, schlüssellose APIs. Keine professionelle Wetterberatung.',
+        'foot.sources': 'Quellen'
+      },
+      ro: {
+        'lang.name': 'Română',
+        'hero.sub': 'Prognoză live, 85 de ani de istoric și export masiv de date. Open-Meteo, fără cheie.',
+        'api.strong': 'Nu e nevoie de cheie API — și niciuna nu este partajată.',
+        'api.body': 'Fiecare panou citește din {om}, care este gratuit și fără cheie pentru uz necomercial: fără înregistrare, fără cont, fără cheie personală în această pagină. Singura limită este {limit} al Open-Meteo (circa 10.000 de cereri pe zi). Dacă vrei propria cotă, poți rula tu însuți acest site — sursa este pe {gh}.',
+        'api.limit': 'limita de utilizare echitabilă',
+        'card.current.h': 'Vremea curentă',
+        'card.current.p': 'Valori live pentru orice oraș — temperatură, umiditate, vânt, precipitații.',
+        'card.history.h': 'Vedere istorică',
+        'card.history.p': 'Înapoi până în 1940 — grafice și tabele zilnice, orare sau la 15 minute, din toate câmpurile Open-Meteo.',
+        'card.download.h': 'Descărcare date',
+        'card.download.p': 'Export masiv — rezoluție zilnică, orară, la 3 ore sau la 15 minute → XLSX, CSV, JSON sau Markdown.',
+        'card.anomaly.h': 'Anomalie climatică',
+        'card.anomaly.p': 'Cu cât a fost un an mai cald, mai rece, mai ploios sau mai secetos decât o perioadă de referință aleasă de tine? Lună de lună, până în 1940.',
+        'card.trends.h': 'Tendințe climatice',
+        'card.trends.p': 'Temperatură sau precipitații, an de an, pe ultimii 10–80 de ani — fiecare an față de o perioadă de referință aleasă de tine, cu linia de tendință.',
+        'card.compare.h': 'Comparație orașe',
+        'card.compare.p': 'Două orașe alăturate pe 5–30 de ani — temperatură și precipitații, an de an, cu diferența medie.',
+        'card.threshold.h': 'Zile-prag',
+        'card.threshold.p': 'Câte zile au depășit o limită în fiecare an — peste 30–49 °C, zile calde urmate de nopți calde, zile cu peste 10–150 mm de ploaie și cea mai lungă perioadă fără ploaie.',
+        'btn.open': 'Deschide',
+        'units.title': 'Unități',
+        'units.temp': 'Temp.:',
+        'units.wind': 'Vânt:',
+        'units.precip': 'Precip.:',
+        'units.image': 'Imagine:',
+        'm.current': 'Vremea curentă',
+        'm.history': 'Vedere istorică (1940–azi)',
+        'm.download': 'Descărcare date',
+        'm.anomaly': 'Anomalie climatică',
+        'm.trends': 'Tendințe climatice',
+        'm.compare': 'Comparație orașe',
+        'm.threshold': 'Zile-prag',
+        'desc.anomaly': 'Compară un an cu o perioadă de referință, lună de lună — temperatura și precipitațiile în tabele separate. Referința implicită este 1991–2020, normala pe 30 de ani a OMM, dar funcționează orice perioadă din 1940 încoace.',
+        'desc.trends': 'O bară pe an, fiecare măsurată față de perioada de referință de mai jos, cu linie de tendință. Anii incompleți sunt excluși, ca un an parțial să nu pară secetos sau răcoros.',
+        'desc.compare': 'Două orașe pe aceiași ani, temperatura și precipitațiile în tabele separate. Se folosesc doar anii compleți în ambele orașe, astfel încât o lipsă de date într-un oraș să nu apară ca diferență climatică.',
+        'desc.threshold': 'Numărul zilelor care depășesc o limită, an de an. Mediile ascund ceea ce simți cu adevărat — „câte zile peste 35 °C” nu. Pragurile sunt mereu în °C și mm, indiferent de comutatorul de unități.',
+        'lbl.city': 'Oraș', 'lbl.cityA': 'Orașul A', 'lbl.cityB': 'Orașul B',
+        'lbl.from': 'De la', 'lbl.to': 'Până la',
+        'lbl.yearCompare': 'Anul comparat',
+        'lbl.resolution': 'Rezoluție',
+        'lbl.resHint': '(zilnic ≤35 zile · orar ≤3 zile · 15 min ≤1 zi, ultimele ~3 luni)',
+        'lbl.fieldsDisplay': 'Câmpuri afișate', 'lbl.fields': 'Câmpuri',
+        'lbl.period': 'Perioadă', 'lbl.variable': 'Variabilă',
+        'lbl.reference': 'Perioadă de referință',
+        'lbl.refHintMonth': '(față de ce se măsoară fiecare lună)',
+        'lbl.refHintYear': '(față de ce se măsoară fiecare an)',
+        'lbl.rainThreshold': 'Prag de ploaie', 'lbl.rainHint': '(o zi ploioasă are cel puțin atât)',
+        'lbl.tempThresholds': 'Praguri de temperatură',
+        'lbl.hotDay': 'Zi caniculară — maximul zilei', 'lbl.warmNight': 'Noapte caldă — minimul nopții',
+        'lbl.baseFrom': 'Referință de la', 'lbl.baseTo': 'Referință până la',
+        'lbl.year': 'An', 'lbl.month': 'Luna', 'lbl.day': 'Ziua',
+        'ph.city': 'ex. Oradea', 'ph.cityB': 'ex. Budapesta', 'ph.year': 'ex. 2024',
+        'btn.getForecast': 'Vezi prognoza', 'btn.getHistory': 'Vezi istoricul',
+        'btn.compare': 'Compară', 'btn.compareCities': 'Compară orașele',
+        'btn.showTrend': 'Arată tendința', 'btn.countDays': 'Numără zilele',
+        'res.daily': 'Zilnic', 'res.1h': '1 oră', 'res.3h': '3 ore', 'res.15min': '15 min',
+        'dl.xlsx': 'Descarcă XLSX', 'dl.csv': 'Descarcă CSV', 'dl.json': 'Descarcă JSON', 'dl.md': 'Descarcă MD',
+        'dl.mdNote': 'MD = rezumat lizibil: antet + agregate săptămânale, lunare și anuale (nu rândurile brute).',
+        'pre.last7': 'Ultimele 7 zile', 'pre.last30': 'Ultimele 30 de zile', 'pre.thisMonth': 'Luna aceasta',
+        'pre.lastMonth': 'Luna trecută', 'pre.thisYear': 'Anul acesta', 'pre.lastYear': 'Anul trecut',
+        'pre.allTime': '1940 → azi', 'pre.lastN': 'Ultimii {n} ani',
+        'f.temp': 'Temperatură', 'f.apptemp': 'Temperatura resimțită', 'f.humidity': 'Umiditate', 'f.dewpoint': 'Punct de rouă',
+        'f.precip': 'Precipitații', 'f.rainsnow': 'Ploaie/zăpadă', 'f.pressure': 'Presiune', 'f.cloud': 'Nebulozitate',
+        'f.wind': 'Viteza vântului', 'f.gusts': 'Rafale', 'f.winddir': 'Direcția vântului',
+        'f.sunshine': 'Insolație', 'f.radiation': 'Radiație',
+        'c.max': 'Max', 'c.min': 'Min', 'c.mean': 'Medie', 'c.feelsMax': 'Resimțit max', 'c.feelsMin': 'Resimțit min',
+        'c.feels': 'Resimțit', 'c.humMax': 'Umid. max', 'c.humMin': 'Umid. min', 'c.dewMax': 'Rouă max',
+        'c.dewMin': 'Rouă min', 'c.dew': 'Punct de rouă', 'c.rain': 'Ploaie', 'c.snow': 'Zăpadă',
+        'c.pressure': 'Presiune', 'c.cloud': 'Nori', 'c.gusts': 'Rafale', 'c.windDir': 'Dir. vânt',
+        'c.sunshine': 'Insolație', 'c.radiation': 'Radiație', 'c.time': 'Timp', 'c.temp': 'Temp.',
+        'c.wind': 'Vânt', 'c.precip': 'Precip.', 'c.points': 'Măsurători', 'c.anomaly': 'Abatere',
+        'c.pctNormal': '% din normal', 'c.difference': 'Diferență', 'c.annualMean': 'Media anuală',
+        'c.annualTotal': 'Total anual', 'c.indicator': 'Indicator', 'c.avgPerYear': 'Medie pe an',
+        'c.perDecade': 'Schimbare pe deceniu', 'c.normal': 'normal',
+        'err.city': 'Introdu un oraș.', 'err.bothCities': 'Introdu ambele orașe.',
+        'err.field': 'Alege cel puțin un câmp.',
+        'err.noData': 'Nu există date de arhivă pentru această locație.',
+        'err.noCharts': 'Nu există grafice de exportat.',
+        'err.year': 'Alege un an între 1940 și {max}.',
+        'err.refYears': 'Introdu ambii ani de referință.',
+        'err.refRange': 'Perioada de referință trebuie să fie între 1940 și {max}.',
+        'err.refOrder': 'Perioada de referință se termină înainte să înceapă.',
+        'err.refShort': 'Folosește o perioadă de referință de cel puțin 5 ani — mai scurt e mai ales zgomot.',
+        'err.fewYears': 'Nu sunt destui ani compleți în această perioadă.',
+        'err.twoYears': 'Mai puțin de doi ani sunt compleți în ambele orașe.',
+        'err.noBaseline': 'Nu sunt destule date {from}–{to} pentru o medie de referință.',
+        'err.noOverlap': 'Nicio lună din {year} nu se suprapune peste referința {from}–{to}.',
+        'err.error': 'Eroare',
+        'ok.downloaded': 'Descărcat', 'ok.rows': 'rânduri', 'ok.saved': 'Salvat',
+        'ok.charts': 'grafic(e)',
+        'msg.rendering': 'Se generează imaginea…',
+        'msg.loading': 'Se încarcă — poate dura câteva secunde…',
+        'msg.fetching': 'Se preiau datele — intervalele mari durează câteva secunde…',
+        'msg.trailing': 'Ultimele {n} rânduri nu au încă valori — arhiva are un decalaj de ~5 zile.',
+        'msg.skipped': 'Omise ca incomplete: {list}.',
+        'msg.preSat': 'Anii marcați cu * sunt anteriori erei satelitare (1979) — în spatele lor stau mult mai puține observații.',
+        'msg.langSwitch': 'Ai schimbat limba — apasă din nou butonul pentru a reîmprospăta rezultatul.',
+        'txt.next7': 'Următoarele 7 zile', 'txt.yearByYear': 'An de an', 'txt.monthByMonth': 'Lună de lună',
+        'txt.hotDays': 'Zile caniculare', 'txt.wetDry': 'Zile ploioase și perioade secetoase',
+        'txt.completeYears': '{n} ani compleți',
+        'txt.warmer': 'mai cald', 'txt.cooler': 'mai rece', 'txt.wetter': 'mai ploios', 'txt.drier': 'mai secetos',
+        'txt.hotDaysYear': '{n} zile caniculare pe an',
+        'txt.elevation': 'altitudine', 'txt.baselineYears': '{n} ani',
+        'foot.data': 'Date: {om} (prognoză, geocodare, arhiva ERA5) — API-uri deschise, fără cheie. Nu constituie consultanță meteorologică profesională.',
+        'foot.sources': 'Surse'
+      }
+    };
+
+    let LANG = 'en';
+
+    // Missing keys fall back to English rather than showing a raw key.
+    function t(key, vars) {
+      let s = (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key;
+      if (vars) Object.keys(vars).forEach(k => { s = s.split('{' + k + '}').join(String(vars[k])); });
+      return s;
+    }
+
+    // The two rich strings carry links; they are substituted here rather than
+    // stored as HTML in the dictionary, so translators only see plain text.
+    const LINK_VARS = () => ({
+      om: '<a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo</a>',
+      limit: `<a href="https://open-meteo.com/en/pricing" target="_blank" rel="noopener">${t('api.limit')}</a>`,
+      gh: '<a href="https://github.com/laci141/weather-web" target="_blank" rel="noopener">GitHub</a>'
+    });
+    function tRich(key) {
+      if (key === 'api.note') return `<strong>${t('api.strong')}</strong> ${t('api.body', LINK_VARS())}`;
+      return t(key, LINK_VARS());
+    }
+
+    function applyStaticText() {
+      document.documentElement.lang = LANG;
+      document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.dataset.i18n); });
+      document.querySelectorAll('[data-i18n-html]').forEach(el => { el.innerHTML = tRich(el.dataset.i18nHtml); });
+      document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.dataset.i18nPh); });
+      document.querySelectorAll('.lang-bar button').forEach(b => b.classList.toggle('on', b.dataset.lang === LANG));
+    }
+
+    // Controls whose labels are generated rather than written in the markup.
+    function rebuildLocalisedControls() {
+      buildPills('hvPills', checkedKeys('hvPills').length ? checkedKeys('hvPills') : HV_DEFAULTS);
+      buildPills('dlPills', checkedKeys('dlPills').length ? checkedKeys('dlPills') : DL_DEFAULTS);
+      const keepRadio = (name) => {
+        const el = document.querySelector(`input[name="${name}"]:checked`);
+        return el ? el.value : null;
+      };
+      const trPer = keepRadio('trper'), cmpPer = keepRadio('cmpper'), thPer = keepRadio('thper');
+      buildPresetLabels();
+      buildTrendPeriods();
+      buildComparePeriods();
+      buildThresholdControls();
+      [['trper', trPer], ['cmpper', cmpPer], ['thper', thPer]].forEach(([name, val]) => {
+        if (!val) return;
+        const el = document.querySelector(`input[name="${name}"][value="${val}"]`);
+        if (el) { el.checked = true; el.closest('.pill').classList.add('on'); }
+      });
+      document.querySelectorAll('input[name="trper"], input[name="cmpper"], input[name="thper"]').forEach(r => {
+        r.closest('.pill').classList.toggle('on', r.checked);
+      });
+      updatePillAvailability('dlRes', 'dlPills');
+      updatePillAvailability('hvRes', 'hvPills');
+    }
+
+    function setLang(code) {
+      if (!LANGS.includes(code)) return;
+      LANG = code;
+      applyStaticText();
+      rebuildLocalisedControls();
+      // A result already on screen was rendered in the previous language; say so
+      // rather than leaving half a panel translated.
+      ['fcResult', 'hvResult', 'dlResult', 'anResult', 'trResult', 'cmpResult', 'thResult'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && el.innerHTML.trim()) el.innerHTML = `<div class="info-box">ℹ️ ${esc(t('msg.langSwitch'))}</div>`;
+      });
+      saveSettings();
+    }
+
+    document.querySelector('.lang-bar').addEventListener('click', (e) => {
+      const b = e.target.closest('button');
+      if (b) setLang(b.dataset.lang);
+    });
+
     // ---------- field catalogue ----------
     const FIELDS = {
-      temp:      { daily: ['temperature_2m_max', 'temperature_2m_min'], hourly: ['temperature_2m'],       chip: '🌡️ Temperature',   color: '#ef4444', minutely: true },
-      apptemp:   { daily: ['apparent_temperature_max', 'apparent_temperature_min'], hourly: ['apparent_temperature'], chip: '🥵 Feels like', color: '#f472b6', minutely: true },
-      humidity:  { daily: ['relative_humidity_2m_max', 'relative_humidity_2m_min'], hourly: ['relative_humidity_2m'], chip: '💧 Humidity', color: '#22c55e', minutely: true },
-      dewpoint:  { daily: ['dew_point_2m_max', 'dew_point_2m_min'], hourly: ['dew_point_2m'],             chip: '💦 Dew point',      color: '#14b8a6', minutely: true },
-      precip:    { daily: ['precipitation_sum'], hourly: ['precipitation'],                               chip: '🌧️ Precipitation', color: '#06b6d4', minutely: true },
-      rainsnow:  { daily: ['rain_sum', 'snowfall_sum'], hourly: ['rain', 'snowfall'],                     chip: '🌨️ Rain/Snow',     color: '#8b5cf6', minutely: true },
-      pressure:  { daily: ['surface_pressure_mean'], hourly: ['surface_pressure'],                        chip: '🧭 Pressure',       color: '#64748b', minutely: false },
-      cloud:     { daily: ['cloud_cover_mean'], hourly: ['cloud_cover'],                                  chip: '☁️ Cloud cover',    color: '#a3a3a3', minutely: false },
-      wind:      { daily: ['wind_speed_10m_max'], hourly: ['wind_speed_10m'],                             chip: '💨 Wind speed',     color: '#f59e0b', minutely: true },
-      gusts:     { daily: ['wind_gusts_10m_max'], hourly: ['wind_gusts_10m'],                             chip: '🌬️ Wind gusts',    color: '#fb923c', minutely: true },
-      winddir:   { daily: ['wind_direction_10m_dominant'], hourly: ['wind_direction_10m'],                chip: '↗️ Wind direction', color: '#f97316', minutely: true },
-      sunshine:  { daily: ['sunshine_duration'], hourly: ['sunshine_duration'],                           chip: '☀️ Sunshine',       color: '#fde047', minutely: true },
-      radiation: { daily: ['shortwave_radiation_sum'], hourly: ['shortwave_radiation'],                   chip: '🔆 Radiation',      color: '#fbbf24', minutely: true }
+      temp:      { daily: ['temperature_2m_max', 'temperature_2m_min'], hourly: ['temperature_2m'],       emoji: '🌡️', key: 'f.temp',   color: '#ef4444', minutely: true },
+      apptemp:   { daily: ['apparent_temperature_max', 'apparent_temperature_min'], hourly: ['apparent_temperature'], emoji: '🥵', key: 'f.apptemp', color: '#f472b6', minutely: true },
+      humidity:  { daily: ['relative_humidity_2m_max', 'relative_humidity_2m_min'], hourly: ['relative_humidity_2m'], emoji: '💧', key: 'f.humidity', color: '#22c55e', minutely: true },
+      dewpoint:  { daily: ['dew_point_2m_max', 'dew_point_2m_min'], hourly: ['dew_point_2m'],             emoji: '💦', key: 'f.dewpoint',      color: '#14b8a6', minutely: true },
+      precip:    { daily: ['precipitation_sum'], hourly: ['precipitation'],                               emoji: '🌧️', key: 'f.precip', color: '#06b6d4', minutely: true },
+      rainsnow:  { daily: ['rain_sum', 'snowfall_sum'], hourly: ['rain', 'snowfall'],                     emoji: '🌨️', key: 'f.rainsnow',     color: '#8b5cf6', minutely: true },
+      pressure:  { daily: ['surface_pressure_mean'], hourly: ['surface_pressure'],                        emoji: '🧭', key: 'f.pressure',       color: '#64748b', minutely: false },
+      cloud:     { daily: ['cloud_cover_mean'], hourly: ['cloud_cover'],                                  emoji: '☁️', key: 'f.cloud',    color: '#a3a3a3', minutely: false },
+      wind:      { daily: ['wind_speed_10m_max'], hourly: ['wind_speed_10m'],                             emoji: '💨', key: 'f.wind',     color: '#f59e0b', minutely: true },
+      gusts:     { daily: ['wind_gusts_10m_max'], hourly: ['wind_gusts_10m'],                             emoji: '🌬️', key: 'f.gusts',    color: '#fb923c', minutely: true },
+      winddir:   { daily: ['wind_direction_10m_dominant'], hourly: ['wind_direction_10m'],                emoji: '↗️', key: 'f.winddir', color: '#f97316', minutely: true },
+      sunshine:  { daily: ['sunshine_duration'], hourly: ['sunshine_duration'],                           emoji: '☀️', key: 'f.sunshine',       color: '#fde047', minutely: true },
+      radiation: { daily: ['shortwave_radiation_sum'], hourly: ['shortwave_radiation'],                   emoji: '🔆', key: 'f.radiation',      color: '#fbbf24', minutely: true }
     };
     const HV_DEFAULTS = ['temp', 'humidity', 'precip', 'rainsnow', 'wind'];
     const DL_DEFAULTS = ['temp'];
@@ -890,7 +1414,7 @@
       box.innerHTML = Object.entries(FIELDS).map(([key, f]) => {
         const on = defaults.includes(key);
         return `<label class="pill${on ? ' on' : ''}" style="--pc:${f.color}" data-pill="${key}">` +
-               `<input type="checkbox" data-key="${key}"${on ? ' checked' : ''}>${f.chip}</label>`;
+               `<input type="checkbox" data-key="${key}"${on ? ' checked' : ''}>${f.emoji} ${esc(t(f.key))}</label>`;
       }).join('');
     }
     buildPills('hvPills', HV_DEFAULTS);
@@ -979,12 +1503,12 @@
     function buildDateField(id, initial) {
       document.getElementById(id).innerHTML =
         `<div class="date-parts">` +
-          `<div class="dp-cell"><label for="${id}_y">Year</label>` +
+          `<div class="dp-cell"><label for="${id}_y">${esc(t('lbl.year'))}</label>` +
             `<input type="number" id="${id}_y" inputmode="numeric" min="${MIN_DATE.slice(0, 4)}" max="${TODAY.slice(0, 4)}"></div>` +
-          `<div class="dp-cell"><label for="${id}_m">Month</label><select id="${id}_m">` +
+          `<div class="dp-cell"><label for="${id}_m">${esc(t('lbl.month'))}</label><select id="${id}_m">` +
             MONTH_FULL.map((n, i) => `<option value="${i + 1}">${n}</option>`).join('') +
           `</select></div>` +
-          `<div class="dp-cell"><label for="${id}_d">Day</label><select id="${id}_d"></select></div>` +
+          `<div class="dp-cell"><label for="${id}_d">${esc(t('lbl.day'))}</label><select id="${id}_d"></select></div>` +
         `</div><div class="date-echo" id="${id}Echo"></div>`;
       DATE_FIELDS[id] = {
         y: document.getElementById(id + '_y'),
@@ -1013,28 +1537,31 @@
     // History View caps ranges (daily ≤35 days), so it gets the short presets.
     const PRESETS = {
       hv: [
-        ['Last 7 days', () => [shiftDays(TODAY, -6), TODAY]],
-        ['Last 30 days', () => [shiftDays(TODAY, -29), TODAY]],
-        ['This month', () => [isoOf(THIS_YEAR, THIS_MONTH, 1), TODAY]],
-        ['Last month', () => {
+        ['pre.last7', () => [shiftDays(TODAY, -6), TODAY]],
+        ['pre.last30', () => [shiftDays(TODAY, -29), TODAY]],
+        ['pre.thisMonth', () => [isoOf(THIS_YEAR, THIS_MONTH, 1), TODAY]],
+        ['pre.lastMonth', () => {
           const y = THIS_MONTH === 1 ? THIS_YEAR - 1 : THIS_YEAR;
           const m = THIS_MONTH === 1 ? 12 : THIS_MONTH - 1;
           return [isoOf(y, m, 1), isoOf(y, m, daysInMonth(y, m))];
         }]
       ],
       dl: [
-        ['Last 30 days', () => [shiftDays(TODAY, -29), TODAY]],
-        ['This year', () => [isoOf(THIS_YEAR, 1, 1), TODAY]],
-        ['Last year', () => [isoOf(THIS_YEAR - 1, 1, 1), isoOf(THIS_YEAR - 1, 12, 31)]],
-        ['1940 → today', () => [MIN_DATE, TODAY]]
+        ['pre.last30', () => [shiftDays(TODAY, -29), TODAY]],
+        ['pre.thisYear', () => [isoOf(THIS_YEAR, 1, 1), TODAY]],
+        ['pre.lastYear', () => [isoOf(THIS_YEAR - 1, 1, 1), isoOf(THIS_YEAR - 1, 12, 31)]],
+        ['pre.allTime', () => [MIN_DATE, TODAY]]
       ]
     };
 
-    function buildPresets(hostId, kind, fromId, toId) {
-      const host = document.getElementById(hostId);
-      host.innerHTML = PRESETS[kind]
-        .map((p, i) => `<button type="button" class="preset-btn" data-i="${i}">${p[0]}</button>`).join('');
-      host.addEventListener('click', (e) => {
+    // Labels are re-rendered on a language switch, so the click handler is bound
+    // once to the container rather than to the buttons themselves.
+    function renderPresets(hostId, kind) {
+      document.getElementById(hostId).innerHTML = PRESETS[kind]
+        .map((p, i) => `<button type="button" class="preset-btn" data-i="${i}">${esc(t(p[0]))}</button>`).join('');
+    }
+    function bindPresets(hostId, kind, fromId, toId) {
+      document.getElementById(hostId).addEventListener('click', (e) => {
         const b = e.target.closest('.preset-btn');
         if (!b) return;
         const [from, to] = PRESETS[kind][Number(b.dataset.i)][1]();
@@ -1042,8 +1569,13 @@
         setDateField(toId, to > TODAY ? TODAY : to);
       });
     }
-    buildPresets('hvPresets', 'hv', 'hvFrom', 'hvTo');
-    buildPresets('dlPresets', 'dl', 'dlFrom', 'dlTo');
+    function buildPresetLabels() {
+      renderPresets('hvPresets', 'hv');
+      renderPresets('dlPresets', 'dl');
+    }
+    buildPresetLabels();
+    bindPresets('hvPresets', 'hv', 'hvFrom', 'hvTo');
+    bindPresets('dlPresets', 'dl', 'dlFrom', 'dlTo');
 
     // ---------- global units ----------
     // `img` is the export image scale (device pixels per CSS pixel); it rides
@@ -1148,14 +1680,14 @@
         downloadBlob(exp.blob, exp.fname);
         reportExport(msg, exp);
       } catch (err) {
-        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        msg.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       }
     }
 
     async function runForecast() {
       const city = document.getElementById('fcCity').value.trim();
       const out = document.getElementById('fcResult');
-      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+      if (!city) { out.innerHTML = `<div class="error-box">${esc(t('err.city'))}</div>`; return; }
       out.innerHTML = '<div class="spinner"></div>';
       const btn = document.getElementById('fcBtn');
       btn.disabled = true;
@@ -1207,47 +1739,48 @@
         }
         out.innerHTML = h;
       } catch (err) {
-        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        out.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       } finally {
         btn.disabled = false;
       }
     }
 
-    // unit-aware column label per field name
+    // unit-aware, translated column label per field name
     function fieldLabel(f) {
+      const T = tempSym(), P = precSym(), W = windSym();
       switch (f) {
-        case 'temperature_2m_max': return 'Max ' + tempSym();
-        case 'temperature_2m_min': return 'Min ' + tempSym();
-        case 'temperature_2m': return 'Temp ' + tempSym();
-        case 'temperature_2m_mean': return 'Mean ' + tempSym();
-        case 'apparent_temperature_max': return 'Feels max ' + tempSym();
-        case 'apparent_temperature_min': return 'Feels min ' + tempSym();
-        case 'apparent_temperature': return 'Feels ' + tempSym();
-        case 'relative_humidity_2m_max': return 'Hum max %';
-        case 'relative_humidity_2m_min': return 'Hum min %';
-        case 'relative_humidity_2m': return 'Humidity %';
-        case 'dew_point_2m_max': return 'Dew max ' + tempSym();
-        case 'dew_point_2m_min': return 'Dew min ' + tempSym();
-        case 'dew_point_2m': return 'Dew point ' + tempSym();
+        case 'temperature_2m_max': return t('c.max') + ' ' + T;
+        case 'temperature_2m_min': return t('c.min') + ' ' + T;
+        case 'temperature_2m_mean': return t('c.mean') + ' ' + T;
+        case 'temperature_2m': return t('c.temp') + ' ' + T;
+        case 'apparent_temperature_max': return t('c.feelsMax') + ' ' + T;
+        case 'apparent_temperature_min': return t('c.feelsMin') + ' ' + T;
+        case 'apparent_temperature': return t('c.feels') + ' ' + T;
+        case 'relative_humidity_2m_max': return t('c.humMax') + ' %';
+        case 'relative_humidity_2m_min': return t('c.humMin') + ' %';
+        case 'relative_humidity_2m': return t('f.humidity') + ' %';
+        case 'dew_point_2m_max': return t('c.dewMax') + ' ' + T;
+        case 'dew_point_2m_min': return t('c.dewMin') + ' ' + T;
+        case 'dew_point_2m': return t('c.dew') + ' ' + T;
         case 'precipitation_sum':
-        case 'precipitation': return 'Precip ' + precSym();
+        case 'precipitation': return t('c.precip') + ' ' + P;
         case 'rain_sum':
-        case 'rain': return 'Rain ' + precSym();
+        case 'rain': return t('c.rain') + ' ' + P;
         case 'snowfall_sum':
-        case 'snowfall': return 'Snow cm';
+        case 'snowfall': return t('c.snow') + ' cm';
         case 'surface_pressure_mean':
-        case 'surface_pressure': return 'Pressure hPa';
+        case 'surface_pressure': return t('c.pressure') + ' hPa';
         case 'cloud_cover_mean':
-        case 'cloud_cover': return 'Cloud %';
+        case 'cloud_cover': return t('c.cloud') + ' %';
         case 'wind_speed_10m_max':
-        case 'wind_speed_10m': return 'Wind ' + windSym();
+        case 'wind_speed_10m': return t('c.wind') + ' ' + W;
         case 'wind_gusts_10m_max':
-        case 'wind_gusts_10m': return 'Gusts ' + windSym();
+        case 'wind_gusts_10m': return t('c.gusts') + ' ' + W;
         case 'wind_direction_10m_dominant':
-        case 'wind_direction_10m': return 'Wind dir °';
-        case 'sunshine_duration': return 'Sunshine s';
-        case 'shortwave_radiation_sum': return 'Radiation MJ/m²';
-        case 'shortwave_radiation': return 'Radiation W/m²';
+        case 'wind_direction_10m': return t('c.windDir') + ' °';
+        case 'sunshine_duration': return t('c.sunshine') + ' s';
+        case 'shortwave_radiation_sum': return t('c.radiation') + ' MJ/m²';
+        case 'shortwave_radiation': return t('c.radiation') + ' W/m²';
         default: return f;
       }
     }
@@ -1354,11 +1887,11 @@
       const out = document.getElementById('hvResult');
       const reqRes = document.querySelector('#hvRes input:checked').value;
 
-      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+      if (!city) { out.innerHTML = `<div class="error-box">${esc(t('err.city'))}</div>`; return; }
       if (!validDates(from, to, out)) return;
       const days = Math.round((new Date(to) - new Date(from)) / 86400000) + 1;
       const keys = checkedKeys('hvPills');
-      if (!keys.length) { out.innerHTML = '<div class="error-box">Select at least one field.</div>'; return; }
+      if (!keys.length) { out.innerHTML = `<div class="error-box">${esc(t('err.field'))}</div>`; return; }
 
       // ----- resolution resolution: caps + automatic fallback -----
       let res = reqRes;
@@ -1463,7 +1996,7 @@
           drawBlockChart('wchart-0', times.map(fmtT), fields, block);
         }
       } catch (err) {
-        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        out.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       } finally {
         btn.disabled = false;
       }
@@ -1619,7 +2152,7 @@
       const kb = Math.max(1, Math.round(blob.size / 1024));
       // Restate the range actually exported — the second place a mistyped date
       // shows up, after the echo under the inputs.
-      let h = `<div class="ok-box">✅ Downloaded: ${rows.length.toLocaleString()} rows · ` +
+      let h = `<div class="ok-box">✅ ${esc(t('ok.downloaded'))}: ${rows.length.toLocaleString()} ${esc(t('ok.rows'))} · ` +
               `${esc(rows[0][0])} → ${esc(rows[rows.length - 1][0])} · ` +
               `${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
       // Archive data lags ~5 days, so a range ending near today can finish on
@@ -1627,7 +2160,7 @@
       let empty = 0;
       while (empty < rows.length && rows[rows.length - 1 - empty].slice(1).every(v => v === null)) empty++;
       if (empty) {
-        h += `<div class="info-box">ℹ️ The last ${empty.toLocaleString()} row(s) have no values yet — archive data lags ~5 days.</div>`;
+        h += `<div class="info-box">ℹ️ ${esc(t('msg.trailing', { n: empty.toLocaleString() }))}</div>`;
       }
       out.innerHTML = h;
     }
@@ -1654,7 +2187,7 @@
         downloadBlob(exp.blob, exp.fname);
         reportExport(msg, exp);
       } catch (err) {
-        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        msg.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       }
     }
 
@@ -1663,7 +2196,7 @@
     async function exportChartsPNG() {
       const msg = document.getElementById('hvExportMsg');
       if (!msg) return;
-      if (!viewCharts.length) { msg.innerHTML = '<div class="error-box">No charts to export.</div>'; return; }
+      if (!viewCharts.length) { msg.innerHTML = `<div class="error-box">${esc(t('err.noCharts'))}</div>`; return; }
       try {
         const imgs = await Promise.all(viewCharts.map(c => new Promise((resolve, reject) => {
           const im = new Image();
@@ -1685,10 +2218,10 @@
         const name = `weather_${safeName(lastView.city)}_${lastView.from}_${lastView.to}_charts.png`;
         cv.toBlob(b => {
           downloadBlob(b, name);
-          msg.innerHTML = `<div class="ok-box">✅ Saved ${imgs.length} chart(s): ${esc(name)}</div>`;
+          msg.innerHTML = `<div class="ok-box">✅ ${esc(t('ok.saved'))} ${imgs.length} ${esc(t('ok.charts'))}: ${esc(name)}</div>`;
         }, 'image/png');
       } catch (err) {
-        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        msg.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       }
     }
 
@@ -1699,9 +2232,9 @@
       const to = dateValue('dlTo');
       const out = document.getElementById('dlResult');
 
-      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+      if (!city) { out.innerHTML = `<div class="error-box">${esc(t('err.city'))}</div>`; return; }
       const keys = checkedKeys('dlPills');
-      if (!keys.length) { out.innerHTML = '<div class="error-box">Select at least one field.</div>'; return; }
+      if (!keys.length) { out.innerHTML = `<div class="error-box">${esc(t('err.field'))}</div>`; return; }
       const res = document.querySelector('#dlRes input:checked').value;
 
       let useKeys = keys;
@@ -1742,7 +2275,7 @@
         downloadBlob(exp.blob, exp.fname);
         reportExport(out, exp);
       } catch (err) {
-        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        out.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       }
     }
 
@@ -1796,24 +2329,24 @@
         '<div class="preset-row">' +
         BASELINE_PRESETS.map((p, i) => `<button type="button" class="preset-btn" data-i="${i}">${p[0]}</button>`).join('') +
         '</div><div class="date-parts" style="grid-template-columns:1fr 1fr">' +
-          `<div class="dp-cell"><label for="${id}_from">Baseline from</label>` +
+          `<div class="dp-cell"><label for="${id}_from">${esc(t('lbl.baseFrom'))}</label>` +
           `<input type="number" id="${id}_from" inputmode="numeric" min="1940" max="${THIS_YEAR}"></div>` +
-          `<div class="dp-cell"><label for="${id}_to">Baseline to</label>` +
+          `<div class="dp-cell"><label for="${id}_to">${esc(t('lbl.baseTo'))}</label>` +
           `<input type="number" id="${id}_to" inputmode="numeric" min="1940" max="${THIS_YEAR}"></div>` +
         `</div><div class="date-echo" id="${id}Echo"></div>`;
-      const f = document.getElementById(id + '_from');
-      const t = document.getElementById(id + '_to');
-      f.value = String(from);
-      t.value = String(to);
+      const fromEl = document.getElementById(id + '_from');
+      const toEl = document.getElementById(id + '_to');
+      fromEl.value = String(from);
+      toEl.value = String(to);
       const refresh = () => { renderBaselineEcho(id); saveSettings(); };
-      f.addEventListener('input', refresh);
-      t.addEventListener('input', refresh);
+      fromEl.addEventListener('input', refresh);
+      toEl.addEventListener('input', refresh);
       host.querySelector('.preset-row').addEventListener('click', (e) => {
         const b = e.target.closest('.preset-btn');
         if (!b) return;
         const p = BASELINE_PRESETS[Number(b.dataset.i)];
-        f.value = String(p[1]);
-        t.value = String(p[2]);
+        fromEl.value = String(p[1]);
+        toEl.value = String(p[2]);
         refresh();
       });
       refresh();
@@ -1824,10 +2357,10 @@
     // Rejects a reference period that cannot support an average; returns an
     // error string or null.
     function baselineProblem(from, to) {
-      if (!Number.isFinite(from) || !Number.isFinite(to)) return 'Enter both reference years.';
-      if (from < 1940 || to > THIS_YEAR) return `The reference period must fall between 1940 and ${THIS_YEAR}.`;
-      if (to < from) return 'The reference period ends before it starts.';
-      if (to - from + 1 < 5) return 'Use a reference period of at least 5 years — anything shorter is mostly noise.';
+      if (!Number.isFinite(from) || !Number.isFinite(to)) return t('err.refYears');
+      if (from < 1940 || to > THIS_YEAR) return t('err.refRange', { max: THIS_YEAR });
+      if (to < from) return t('err.refOrder');
+      if (to - from + 1 < 5) return t('err.refShort');
       return null;
     }
 
@@ -1909,9 +2442,9 @@
           { city, year, reference: [baseFrom, baseTo], variable: v.label, unit: v.unit, months: rows });
         downloadBlob(blob, fname);
         const kb = Math.max(1, Math.round(blob.size / 1024));
-        msg.innerHTML = `<div class="ok-box">✅ Downloaded: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
+        msg.innerHTML = `<div class="ok-box">✅ ${esc(t('ok.downloaded'))}: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
       } catch (err) {
-        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        msg.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       }
     }
 
@@ -2009,10 +2542,10 @@
       const out = document.getElementById('anResult');
       const btn = document.getElementById('anBtn');
 
-      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+      if (!city) { out.innerHTML = `<div class="error-box">${esc(t('err.city'))}</div>`; return; }
       const year = parseInt(document.getElementById('anYear').value, 10);
       if (!Number.isFinite(year) || year < 1940 || year > THIS_YEAR) {
-        out.innerHTML = `<div class="error-box">Pick a year between 1940 and ${THIS_YEAR}.</div>`;
+        out.innerHTML = `<div class="error-box">${esc(t('err.year', { max: THIS_YEAR }))}</div>`;
         return;
       }
       const { from: baseFrom, to: baseTo } = baselineRange('anBaseline');
@@ -2034,7 +2567,7 @@
           fields: ['temperature_2m_mean', 'precipitation_sum'], units: unitsBody()
         });
         const times = (d.daily || {}).time || [];
-        if (!times.length) throw new Error('No archive data for this location.');
+        if (!times.length) throw new Error(t('err.noData'));
 
         const build = (field, isMean, unit, label) => {
           const stats = monthlyStats(times, (d.daily || {})[field] || []);
@@ -2065,7 +2598,7 @@
         drawAnomalyChart('temp', temp, year, baseFrom, baseTo);
         drawAnomalyChart('precip', precip, year, baseFrom, baseTo);
       } catch (err) {
-        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        out.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       } finally {
         btn.disabled = false;
       }
@@ -2089,10 +2622,10 @@
       document.getElementById('trPeriod').innerHTML =
         TREND_PERIODS.map(n =>
           `<label class="pill${n === 30 ? ' on' : ''}" style="--pc:#14b8a6" data-pill="p${n}">` +
-          `<input type="radio" name="trper" value="${n}"${n === 30 ? ' checked' : ''}>Last ${n} years</label>`
+          `<input type="radio" name="trper" value="${n}"${n === 30 ? ' checked' : ''}>${esc(t('pre.lastN', { n }))}</label>`
         ).join('') +
         '<label class="pill" style="--pc:#14b8a6" data-pill="pmax">' +
-        '<input type="radio" name="trper" value="max">1940 → today</label>';
+        `<input type="radio" name="trper" value="max">${esc(t('pre.allTime'))}</label>`;
     }
     buildTrendPeriods();
 
@@ -2177,9 +2710,9 @@
           { city, variable: isTemp ? 'temperature' : 'precipitation', baseline, unit, years: rows });
         downloadBlob(blob, fname);
         const kb = Math.max(1, Math.round(blob.size / 1024));
-        msg.innerHTML = `<div class="ok-box">✅ Downloaded: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
+        msg.innerHTML = `<div class="ok-box">✅ ${esc(t('ok.downloaded'))}: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
       } catch (err) {
-        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        msg.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       }
     }
 
@@ -2187,7 +2720,7 @@
       const city = document.getElementById('trCity').value.trim();
       const out = document.getElementById('trResult');
       const btn = document.getElementById('trBtn');
-      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+      if (!city) { out.innerHTML = `<div class="error-box">${esc(t('err.city'))}</div>`; return; }
 
       const isTemp = document.querySelector('#trVar input:checked').value === 'temp';
       const period = document.querySelector('#trPeriod input:checked').value;
@@ -2212,7 +2745,7 @@
         });
         const times = (d.daily || {}).time || [];
         const vals = (d.daily || {})[field] || [];
-        if (!times.length) throw new Error('No archive data for this location.');
+        if (!times.length) throw new Error(t('err.noData'));
 
         const byYear = new Map();
         times.forEach((t, i) => {
@@ -2241,7 +2774,7 @@
 
         const years = [], skipped = [];
         for (let y = startYear; y <= THIS_YEAR; y++) (complete(y) ? years : skipped).push(y);
-        if (years.length < 3) throw new Error('Not enough complete years in this period.');
+        if (years.length < 3) throw new Error(t('err.fewYears'));
 
         const values = years.map(y => yearValue(byYear.get(y)));
         const anoms = values.map(v => v - baseline);
@@ -2264,7 +2797,7 @@
         h += `<div class="anom-sub">${esc(years[0])}–${esc(years[years.length - 1])} — ` +
              `${esc(years.length)} complete years, trending ${word} by ` +
              `${esc(Math.abs(Math.round(fit.slope * 100) / 100))} ${esc(unit)} per year.`;
-        if (skipped.length) h += ` Skipped as incomplete: ${esc(skipped.join(', '))}.`;
+        if (skipped.length) h += ' ' + esc(t('msg.skipped', { list: skipped.join(', ') }));
         h += '</div>';
         h += '<div class="chart-wrap"><canvas id="trendCanvas"></canvas></div>';
 
@@ -2280,7 +2813,7 @@
         });
         h += '</table></div>';
         if (years[0] < SATELLITE_ERA) {
-          h += '<div class="info-box">ℹ️ Years marked * predate the satellite era (1979) — fewer observations stand behind them.</div>';
+          h += `<div class="info-box">ℹ️ ${esc(t('msg.preSat'))}</div>`;
         }
         h += '<div class="dl-row" style="margin-top:14px">' +
              '<button class="btn btn-teal" style="width:auto" onclick="exportTrend(\'xlsx\')">📥 XLSX</button>' +
@@ -2336,7 +2869,7 @@
           });
         }
       } catch (err) {
-        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        out.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       } finally {
         btn.disabled = false;
       }
@@ -2574,7 +3107,7 @@
       const msg = document.getElementById(msgId);
       if (!msg || !spec) return;
       const ext = mime === 'image/jpeg' ? 'jpg' : 'png';
-      msg.innerHTML = '<div class="info-box">🖼️ Rendering the image…</div>';
+      msg.innerHTML = `<div class="info-box">🖼️ ${esc(t('msg.rendering'))}</div>`;
       try {
         let want = Number(UNITS.img || 2);
         let out = null;
@@ -2588,10 +3121,10 @@
         const kb = Math.max(1, Math.round(out.blob.size / 1024));
         const note = out.scale < Number(UNITS.img || 2)
           ? ` (scaled to ${out.scale.toFixed(1)}× to stay inside the canvas limit)` : '';
-        msg.innerHTML = `<div class="ok-box">✅ Saved ${out.w.toLocaleString()}×${out.h.toLocaleString()} px · ` +
+        msg.innerHTML = `<div class="ok-box">✅ ${esc(t('ok.saved'))} ${out.w.toLocaleString()}×${out.h.toLocaleString()} px · ` +
                         `${kb.toLocaleString()} KB · ${esc(spec.filename)}.${ext}${note}</div>`;
       } catch (err) {
-        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        msg.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       }
     }
 
@@ -2613,34 +3146,34 @@
     const anomColor = (isMean, v) => (v === null ? null : CLS_COLOR[isMean ? (v >= 0 ? 'warm' : 'cool') : (v >= 0 ? 'wet' : 'dry')]);
 
     function trendImageSpec() {
-      const t = lastTrend;
+      const tr = lastTrend;
       if (!t) return null;
-      const label = t.isTemp ? 'Temperature' : 'Precipitation';
-      const header = ['Year', `${t.isTemp ? 'Annual mean' : 'Annual total'} ${t.unit}`, `Anomaly ${t.unit}`]
-        .concat(t.isTemp ? [] : ['% of normal']);
-      const rows = t.years.map((y, i) =>
-        [String(y) + (y < SATELLITE_ERA ? ' *' : ''), round1(t.values[i]), signed(t.anoms[i])]
-          .concat(t.isTemp ? [] : [signed(t.pcts[i]) + '%']));
+      const label = tr.isTemp ? 'Temperature' : 'Precipitation';
+      const header = ['Year', `${tr.isTemp ? 'Annual mean' : 'Annual total'} ${tr.unit}`, `Anomaly ${tr.unit}`]
+        .concat(tr.isTemp ? [] : ['% of normal']);
+      const rows = tr.years.map((y, i) =>
+        [String(y) + (y < SATELLITE_ERA ? ' *' : ''), round1(tr.values[i]), signed(tr.anoms[i])]
+          .concat(tr.isTemp ? [] : [signed(tr.pcts[i]) + '%']));
       return {
         emoji: '📊', title: `Climate Trends — ${label}`,
-        filename: `trend_${safeName(t.city)}_${t.isTemp ? 'temperature' : 'precipitation'}_${t.years[0]}-${t.years[t.years.length - 1]}`,
+        filename: `trend_${safeName(tr.city)}_${tr.isTemp ? 'temperature' : 'precipitation'}_${tr.years[0]}-${tr.years[tr.years.length - 1]}`,
         subtitle: [
-          `${t.loc.name}${t.loc.country_code ? ', ' + t.loc.country_code : ''} · ${t.loc.latitude}, ${t.loc.longitude}`,
-          `${t.years[0]}–${t.years[t.years.length - 1]} · ${t.years.length} complete years · reference ${t.baseFrom}–${t.baseTo} = ${round1(t.baseline)} ${t.unit}`,
-          t.skipped.length ? `Skipped as incomplete: ${t.skipped.join(', ')}` : ''
+          `${tr.loc.name}${tr.loc.country_code ? ', ' + tr.loc.country_code : ''} · ${tr.loc.latitude}, ${tr.loc.longitude}`,
+          `${tr.years[0]}–${tr.years[tr.years.length - 1]} · ${tr.years.length} complete years · reference ${tr.baseFrom}–${tr.baseTo} = ${round1(tr.baseline)} ${tr.unit}`,
+          tr.skipped.length ? `Skipped as incomplete: ${tr.skipped.join(', ')}` : ''
         ].filter(Boolean),
         headline: {
-          text: `${signed(t.totalChange)} ${t.unit}`,
-          color: CLS_COLOR[t.isTemp ? (t.totalChange >= 0 ? 'warm' : 'cool') : (t.totalChange >= 0 ? 'wet' : 'dry')],
-          sub: `across the period, trending ${t.isTemp ? (t.totalChange >= 0 ? 'warmer' : 'cooler') : (t.totalChange >= 0 ? 'wetter' : 'drier')} ` +
-               `by ${Math.abs(Math.round(t.slope * 100) / 100)} ${t.unit} per year`
+          text: `${signed(tr.totalChange)} ${tr.unit}`,
+          color: CLS_COLOR[tr.isTemp ? (tr.totalChange >= 0 ? 'warm' : 'cool') : (tr.totalChange >= 0 ? 'wet' : 'dry')],
+          sub: `across the period, trending ${tr.isTemp ? (tr.totalChange >= 0 ? 'warmer' : 'cooler') : (tr.totalChange >= 0 ? 'wetter' : 'drier')} ` +
+               `by ${Math.abs(Math.round(tr.slope * 100) / 100)} ${tr.unit} per year`
         },
         sections: [
           { chart: { config: trendChart && trendChart.config, height: 440 } },
           {
             heading: 'Year by year',
-            table: { header, rows, cellColor: (r, c) => (c === 2 ? anomColor(t.isTemp, t.anoms[r]) : null) },
-            note: t.years[0] < SATELLITE_ERA ? '* predates the satellite era (1979) — fewer observations stand behind those years.' : ''
+            table: { header, rows, cellColor: (r, c) => (c === 2 ? anomColor(tr.isTemp, tr.anoms[r]) : null) },
+            note: tr.years[0] < SATELLITE_ERA ? '* predates the satellite era (1979) — fewer observations stand behind those years.' : ''
           }
         ],
         footer: IMAGE_FOOTER
@@ -2739,7 +3272,7 @@
     function buildComparePeriods() {
       document.getElementById('cmpPeriod').innerHTML = COMPARE_PERIODS.map(n =>
         `<label class="pill${n === 20 ? ' on' : ''}" style="--pc:#a78bfa" data-pill="c${n}">` +
-        `<input type="radio" name="cmpper" value="${n}"${n === 20 ? ' checked' : ''}>Last ${n} years</label>`
+        `<input type="radio" name="cmpper" value="${n}"${n === 20 ? ' checked' : ''}>${esc(t('pre.lastN', { n }))}</label>`
       ).join('');
     }
     buildComparePeriods();
@@ -2813,9 +3346,9 @@
           { cityA: c.a.name, cityB: c.b.name, variable: v.label, unit: v.unit, years: rows });
         downloadBlob(blob, fname);
         const kb = Math.max(1, Math.round(blob.size / 1024));
-        msg.innerHTML = `<div class="ok-box">✅ Downloaded: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
+        msg.innerHTML = `<div class="ok-box">✅ ${esc(t('ok.downloaded'))}: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
       } catch (err) {
-        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        msg.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       }
     }
 
@@ -2879,7 +3412,7 @@
       const out = document.getElementById('cmpResult');
       const btn = document.getElementById('cmpBtn');
 
-      if (!nameA || !nameB) { out.innerHTML = '<div class="error-box">Enter both cities.</div>'; return; }
+      if (!nameA || !nameB) { out.innerHTML = `<div class="error-box">${esc(t('err.bothCities'))}</div>`; return; }
       const period = Number(document.querySelector('#cmpPeriod input:checked').value);
       const startYear = THIS_YEAR - period + 1;
 
@@ -2909,7 +3442,7 @@
         const rawP = build('precipitation_sum', false, precSym(), 'Precipitation');
         // both variables share the years complete on both sides
         const years = rawT.years.filter(y => rawP.years.includes(y));
-        if (years.length < 2) throw new Error('Fewer than two years are complete in both cities for this period.');
+        if (years.length < 2) throw new Error(t('err.twoYears'));
 
         const finish = (raw) => {
           const aVals = years.map(y => raw.A.get(y));
@@ -2949,7 +3482,7 @@
         drawCompareChart('temp', temp, lastCompare);
         drawCompareChart('precip', precip, lastCompare);
       } catch (err) {
-        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        out.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       } finally {
         btn.disabled = false;
       }
@@ -2977,10 +3510,10 @@
       document.getElementById('thPeriod').innerHTML =
         TREND_PERIODS.map(n =>
           `<label class="pill${n === 30 ? ' on' : ''}" style="--pc:#fb7185" data-pill="t${n}">` +
-          `<input type="radio" name="thper" value="${n}"${n === 30 ? ' checked' : ''}>Last ${n} years</label>`
+          `<input type="radio" name="thper" value="${n}"${n === 30 ? ' checked' : ''}>${esc(t('pre.lastN', { n }))}</label>`
         ).join('') +
         '<label class="pill" style="--pc:#fb7185" data-pill="tmax">' +
-        '<input type="radio" name="thper" value="max">1940 → today</label>';
+        `<input type="radio" name="thper" value="max">${esc(t('pre.allTime'))}</label>`;
 
       document.getElementById('thWet').innerHTML = WET_THRESHOLDS.map(n =>
         `<label class="pill${n === 20 ? ' on' : ''}" style="--pc:#38bdf8" data-pill="w${n}">` +
@@ -3001,67 +3534,67 @@
     }
 
     function thresholdImageSpec() {
-      const t = lastThresholds;
+      const th = lastThresholds;
       if (!t) return null;
       return {
         emoji: '🔥', title: 'Threshold Days',
-        filename: `thresholds_${safeName(t.city)}_${t.years[0]}-${t.years[t.years.length - 1]}`,
+        filename: `thresholds_${safeName(th.city)}_${th.years[0]}-${th.years[th.years.length - 1]}`,
         subtitle: [
-          `${t.loc.name}${t.loc.country_code ? ', ' + t.loc.country_code : ''} · ${t.loc.latitude}, ${t.loc.longitude}`,
-          `${t.years[0]}–${t.years[t.years.length - 1]} · ${t.years.length} complete years · ` +
-          `hot > ${t.hotT} °C · wet ≥ ${t.wetT} mm · warm night > ${t.nightT} °C · dry day < ${DRY_DAY_MM} mm`
+          `${th.loc.name}${th.loc.country_code ? ', ' + th.loc.country_code : ''} · ${th.loc.latitude}, ${th.loc.longitude}`,
+          `${th.years[0]}–${th.years[th.years.length - 1]} · ${th.years.length} complete years · ` +
+          `hot > ${th.hotT} °C · wet ≥ ${th.wetT} mm · warm night > ${th.nightT} °C · dry day < ${DRY_DAY_MM} mm`
         ],
         headline: {
-          text: `${t.rows.hot.avg.toFixed(1)} hot days a year`,
+          text: `${th.rows.hot.avg.toFixed(1)} hot days a year`,
           color: '#f87171',
-          sub: `${signed(t.rows.hot.perDecade)} days per decade · longest dry spell ${t.maxDry.days} days in ${t.maxDry.year}`
+          sub: `${signed(th.rows.hot.perDecade)} days per decade · longest dry spell ${th.maxDry.days} days in ${th.maxDry.year}`
         },
         sections: [
-          { heading: `Days above ${t.hotT} °C, and those also staying above ${t.nightT} °C at night`,
+          { heading: `Days above ${th.hotT} °C, and those also staying above ${th.nightT} °C at night`,
             chart: { config: (thCharts[0] || {}).config, height: 430 } },
-          { heading: `Days with ${t.wetT} mm or more, and the longest dry spell`,
+          { heading: `Days with ${th.wetT} mm or more, and the longest dry spell`,
             chart: { config: (thCharts[1] || {}).config, height: 430 } },
-          { heading: 'Year by year', table: { header: t.header, rows: t.tableRows } }
+          { heading: 'Year by year', table: { header: th.header, rows: th.tableRows } }
         ],
         footer: IMAGE_FOOTER
       };
     }
 
     function exportThresholds(format) {
-      const t = lastThresholds;
+      const th = lastThresholds;
       const msg = document.getElementById('thExportMsg');
       if (!t || !msg) return;
-      const fname = `thresholds_${safeName(t.city)}_${t.years[0]}-${t.years[t.years.length - 1]}.${format}`;
+      const fname = `thresholds_${safeName(th.city)}_${th.years[0]}-${th.years[th.years.length - 1]}.${format}`;
       try {
         const md = () => {
           const L = [];
-          L.push(`# Threshold days — ${t.loc.name}${t.loc.country_code ? ', ' + t.loc.country_code : ''}`, '');
+          L.push(`# Threshold days — ${th.loc.name}${th.loc.country_code ? ', ' + th.loc.country_code : ''}`, '');
           L.push('| | |', '|---|---|');
-          L.push(`| Coordinates | ${t.loc.latitude}, ${t.loc.longitude} |`);
-          L.push(`| Period | ${t.years[0]}–${t.years[t.years.length - 1]} (${t.years.length} complete years) |`);
-          L.push(`| Hot day | daily maximum above ${t.hotT} °C |`);
-          L.push(`| Warm night | daily minimum above ${t.nightT} °C |`);
-          L.push(`| Wet day | ${t.wetT} mm or more in a day |`);
+          L.push(`| Coordinates | ${th.loc.latitude}, ${th.loc.longitude} |`);
+          L.push(`| Period | ${th.years[0]}–${th.years[th.years.length - 1]} (${th.years.length} complete years) |`);
+          L.push(`| Hot day | daily maximum above ${th.hotT} °C |`);
+          L.push(`| Warm night | daily minimum above ${th.nightT} °C |`);
+          L.push(`| Wet day | ${th.wetT} mm or more in a day |`);
           L.push(`| Dry day | under ${DRY_DAY_MM} mm |`);
-          if (t.skipped.length) L.push(`| Years skipped (incomplete) | ${t.skipped.join(', ')} |`);
+          if (th.skipped.length) L.push(`| Years skipped (incomplete) | ${th.skipped.join(', ')} |`);
           L.push('| Source | Open-Meteo archive (ERA5) |');
           L.push(`| Generated | ${TODAY} |`, '');
           L.push('## Averages and trends', '', '| Indicator | Average per year | Change per decade |', '|---|---:|---:|');
-          Object.values(t.rows).forEach(r => L.push(`| ${r.label} | ${r.avg.toFixed(1)} | ${signed(r.perDecade)} |`));
+          Object.values(th.rows).forEach(r => L.push(`| ${r.label} | ${r.avg.toFixed(1)} | ${signed(r.perDecade)} |`));
           L.push('', '## Year by year', '');
-          L.push(`| ${t.header.join(' | ')} |`, `|---|${t.header.slice(1).map(() => '---:').join('|')}|`);
-          t.tableRows.forEach(r => L.push(`| ${r.join(' | ')} |`));
+          L.push(`| ${th.header.join(' | ')} |`, `|---|${th.header.slice(1).map(() => '---:').join('|')}|`);
+          th.tableRows.forEach(r => L.push(`| ${r.join(' | ')} |`));
           return L.join('\n');
         };
-        const blob = serializeTable(t.header, t.tableRows, format, md, {
-          city: t.city, thresholds: { hotC: t.hotT, nightC: t.nightT, wetMM: t.wetT, dryDayUnderMM: DRY_DAY_MM },
-          years: t.tableRows
+        const blob = serializeTable(th.header, th.tableRows, format, md, {
+          city: th.city, thresholds: { hotC: th.hotT, nightC: th.nightT, wetMM: th.wetT, dryDayUnderMM: DRY_DAY_MM },
+          years: th.tableRows
         });
         downloadBlob(blob, fname);
         const kb = Math.max(1, Math.round(blob.size / 1024));
-        msg.innerHTML = `<div class="ok-box">✅ Downloaded: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
+        msg.innerHTML = `<div class="ok-box">✅ ${esc(t('ok.downloaded'))}: ${esc(fname)} (${kb.toLocaleString()} KB)</div>`;
       } catch (err) {
-        msg.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        msg.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       }
     }
 
@@ -3107,7 +3640,7 @@
       const city = document.getElementById('thCity').value.trim();
       const out = document.getElementById('thResult');
       const btn = document.getElementById('thBtn');
-      if (!city) { out.innerHTML = '<div class="error-box">Please enter a city.</div>'; return; }
+      if (!city) { out.innerHTML = `<div class="error-box">${esc(t('err.city'))}</div>`; return; }
 
       const hotT = Number(document.getElementById('thHot').value);
       const nightT = Number(document.getElementById('thNight').value);
@@ -3127,7 +3660,7 @@
           units: METRIC_UNITS
         });
         const times = (d.daily || {}).time || [];
-        if (!times.length) throw new Error('No archive data for this location.');
+        if (!times.length) throw new Error(t('err.noData'));
         const mx = d.daily.temperature_2m_max || [];
         const mn = d.daily.temperature_2m_min || [];
         const pr = d.daily.precipitation_sum || [];
@@ -3148,7 +3681,7 @@
           const g = byYear.get(y);
           (g && g.n >= 360 ? years : skipped).push(y);
         }
-        if (years.length < 3) throw new Error('Not enough complete years in this period.');
+        if (years.length < 3) throw new Error(t('err.fewYears'));
 
         const num = (v) => (v === null || v === undefined || !Number.isFinite(Number(v)) ? null : Number(v));
         const hot = [], wet = [], dry = [], hotNight = [];
@@ -3197,7 +3730,7 @@
         h += `<div class="anom-sub">above ${esc(hotT)} °C, averaged over the period — ` +
              `${esc(signed(rows.hot.perDecade))} days per decade. ` +
              `Longest dry spell: ${esc(maxDry.days)} days in ${esc(maxDry.year)}.`;
-        if (skipped.length) h += ` Skipped as incomplete: ${esc(skipped.join(', '))}.`;
+        if (skipped.length) h += ' ' + esc(t('msg.skipped', { list: skipped.join(', ') }));
         h += '</div>';
 
         h += '<div class="table-wrap" style="max-height:none"><table><tr><th>Indicator</th>' +
@@ -3219,7 +3752,7 @@
         });
         h += '</table></div>';
         if (years[0] < SATELLITE_ERA) {
-          h += '<div class="info-box">ℹ️ Years marked * predate the satellite era (1979) — fewer observations stand behind them.</div>';
+          h += `<div class="info-box">ℹ️ ${esc(t('msg.preSat'))}</div>`;
         }
         h += '<div class="dl-row" style="margin-top:14px">' +
              '<button class="btn btn-rose" style="width:auto" onclick="exportThresholds(\'xlsx\')">📥 XLSX</button>' +
@@ -3251,7 +3784,7 @@
             color: '#e2e8f0', type: 'line' }
         ], 'Days');
       } catch (err) {
-        out.innerHTML = `<div class="error-box">Error: ${esc(err.message)}</div>`;
+        out.innerHTML = `<div class="error-box">${esc(t('err.error'))}: ${esc(err.message)}</div>`;
       } finally {
         btn.disabled = false;
       }
@@ -3276,6 +3809,7 @@
       if (!settingsReady) return;
       try {
         localStorage.setItem(STORE_KEY, JSON.stringify({
+          lang: LANG,
           cities: Object.fromEntries(CITY_IDS.map(id => [id, inputVal(id)])),
           year: inputVal('anYear'),
           units: { ...UNITS },
@@ -3295,6 +3829,7 @@
       let s = null;
       try { s = JSON.parse(localStorage.getItem(STORE_KEY) || 'null'); } catch (err) { s = null; }
       if (!s) return;
+      if (s.lang && LANGS.includes(s.lang)) LANG = s.lang;
 
       if (s.cities) CITY_IDS.forEach(id => {
         const el = document.getElementById(id);
@@ -3351,6 +3886,8 @@
 
     loadSettings();
     settingsReady = true;
+    applyStaticText();
+    rebuildLocalisedControls();
     updatePillAvailability('dlRes', 'dlPills');
     updatePillAvailability('hvRes', 'hvPills');
 

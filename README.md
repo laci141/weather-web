@@ -13,6 +13,7 @@ Historical weather viewer + data downloader for Open-Meteo (daily/hourly/3-hour/
 - **Threshold Days**: How many days a year crossed a limit — above 30–49 °C, hot days that also stayed warm overnight, days over 10/20/30/90/150 mm of rain, and the longest run without rain
 - **Image export**: Every panel exports a PNG or JPEG report — header, headline figure, chart and full table — at 1×, 2× or 3×
 - **Reference period**: Defaults to 1991–2020 (the WMO normal) but freely settable — 1961–1990, 1981–2010, single decades, or any span of 5+ years
+- **Four languages**: English, Hungarian, German and Romanian, switchable from the top-right corner and remembered across reloads
 - **Keyless**: No API key anywhere — Open-Meteo is free and keyless for non-commercial use
 - **Date entry**: Explicit Year / Month / Day controls — no OS calendar on mobile, and the month can never be read as the day
 - **Quick ranges**: Last 30 days, this year, last year, 1940 → today
@@ -46,6 +47,24 @@ every level. A baseline January for rainfall is therefore the average January
 *total* across the reference years, not the average rainy day — and the yearly
 precipitation headline is the difference between annual totals, reported in mm
 and as a percentage of normal.
+
+### Languages
+
+Static markup carries `data-i18n` / `data-i18n-html` / `data-i18n-ph` keys and is
+rewritten in place; anything generated at runtime goes through `t(key, vars)`.
+Missing keys fall back to English rather than showing a raw key, and a test
+asserts that all four dictionaries carry exactly the same key set.
+
+Currently translated: the whole static interface, every generated control (field
+chips, range presets, period pills, date and baseline pickers), all table column
+labels, and every error, loading and download message.
+
+Still English: the narrative sentences inside a result ("2024 was warmer than
+the 1991–2020 reference — …"), the data notes under the climate panels, and the
+contents of exported files and report images.
+
+Switching language while a result is on screen replaces that result with a
+prompt to re-run it, rather than leaving half a panel in the previous language.
 
 ### Threshold definitions
 
