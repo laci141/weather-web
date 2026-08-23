@@ -94,7 +94,7 @@ are visible instead of silently averaged.
 
 ## Live
 
-https://weather-web-xxxxx.onrender.com/ (Render free tier)
+[https://weather-web.pages.dev/]
 
 ## Tech Stack
 
