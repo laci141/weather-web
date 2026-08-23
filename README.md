@@ -92,7 +92,7 @@ and the arithmetic mean for everything else. A `Points` column shows how many
 readings each period holds, so partial weeks and months at the edges of a range
 are visible instead of silently averaged.
 
-## Live
+## Live ---
 
 https://weather-web.pages.dev/
 
