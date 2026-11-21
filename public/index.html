@@ -4,8 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Weather — Forecast, History & Data Downloader</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js" integrity="sha384-DhxhYObIMeMNGyAG7iK11OHzBIKyEIeRL0ad1iFPAOwZB8iirUlTT0O/WJJUk8+o" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" integrity="sha384-vtjasyidUo0kW94K5MXDXntzOJpQgBKXmE7e2Ga4LG0skTTLeBi97eFAXsqewJjw" crossorigin="anonymous"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
@@ -1655,6 +1655,12 @@
 
     // One serializer for every table the app exports; mdDoc is a thunk so the
     // (potentially expensive) Markdown digest is only built when asked for.
+    // Spreadsheet formula guard (CSV only). Excel and LibreOffice evaluate cells that start with
+    // = + - @ (or a tab / CR), so such text gets a leading apostrophe. Numeric-looking strings
+    // ("-3.2", "+0.1", "1e-5") and a lone "-" are left alone, so signed numbers stay numbers.
+    const FORMULA_START = /^([=+\-@][\s\S]|[\t\r])/;
+    const NUMERIC_STR = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
+    function csvGuard(s) { return FORMULA_START.test(s) && !NUMERIC_STR.test(s) ? "'" + s : s; }
     function serializeTable(header, rows, format, mdDoc, jsonObj) {
       if (format === 'xlsx') {
         if (typeof XLSX === 'undefined') throw new Error('SheetJS failed to load.');
@@ -1666,7 +1672,7 @@
       }
       if (format === 'csv') {
         const csv = [header, ...rows].map(r => r.map(v => {
-          const s = String(v === null || v === undefined ? '' : v);
+          const s = csvGuard(String(v === null || v === undefined ? '' : v));
           return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
         }).join(',')).join('\r\n');
         // BOM so Excel opens UTF-8 correctly instead of mangling °C
