@@ -557,8 +557,9 @@
       .table-wrap { max-width: 100%; }
       .current-grid { gap: 14px; }
       .current-item { min-width: 40%; }
-      .dl-row { flex-direction: column; }
-      .dl-row .btn { width: 100%; }
+      .dl-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+      .modal-content .dl-row .btn { width: 100%; padding: 12px 8px; font-size: 1rem; white-space: normal; }
+      .dl-row .btn:first-child:nth-last-child(odd) { grid-column: 1 / -1; }
     }
     /* Small-phone glass tweak (Laci's skill) */
     @media (max-width: 600px) {
@@ -569,6 +570,12 @@
         box-shadow: 0 12px 32px -14px rgba(0,0,0,.7);
       }
       .bento-card { padding: 20px; }
+      .modal-content th, .modal-content td { padding: 9px 10px; }
+      .modal-content th:first-child, .modal-content td:first-child { position: sticky; left: 0; }
+      .modal-content td:first-child { background-color: #19203a; z-index: 1; }
+      .modal-content th:first-child { z-index: 3; }
+      .modal-content tr:hover td:first-child { background-color: #1d2642; }
+      .tbl-wrap-first td:first-child { white-space: normal; min-width: 9em; }
     }
   </style>
 </head>
@@ -3269,11 +3276,12 @@
         if (skipped.length) h += ` Skipped as incomplete: ${esc(skipped.join(', '))}.`;
         h += '</div>';
 
-        h += '<div class="table-wrap" style="max-height:none"><table><tr><th>Indicator</th>' +
+        h += '<div class="table-wrap" style="max-height:none"><table class="tbl-wrap-first"><tr><th>Indicator</th>' +
              '<th>Average per year</th><th>Change per decade</th></tr>';
-        Object.values(rows).forEach(r => {
+        const SUMMARY_CLS = { hot: ['warm', 'cool'], hotNight: ['warm', 'cool'], wet: ['wet', 'dry'], dry: ['dry', 'wet'] };
+        Object.entries(rows).forEach(([k, r]) => {
           h += `<tr><td>${esc(r.label)}</td><td>${esc(r.avg.toFixed(1))}</td>` +
-               `<td class="${r.perDecade >= 0 ? 'warm' : 'cool'}">${esc(signed(r.perDecade))}</td></tr>`;
+               `<td class="${SUMMARY_CLS[k][r.perDecade >= 0 ? 0 : 1]}">${esc(signed(r.perDecade))}</td></tr>`;
         });
         h += '</table></div>';
 
