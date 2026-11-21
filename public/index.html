@@ -17,15 +17,19 @@
       color: #e8eef7;
       overflow-x: hidden;
     }
-    /* Clean dark background — NO page-side glow blobs. All colored glow comes
-       from the per-panel halo rings (box-shadow on cards/modals). */
+    /* Dark base with soft coloured radial glows, so the frosted glass panels
+       have something to blur; per-panel halo rings still come from box-shadow. */
     body::before {
       content: "";
       position: fixed;
       inset: 0;
       z-index: -1;
       pointer-events: none;
-      background: #0b1020;
+      background:
+        radial-gradient(40vw 40vw at 12% 18%, rgba(59,130,246,.28), transparent 70%),
+        radial-gradient(38vw 38vw at 88% 22%, rgba(139,92,246,.24), transparent 70%),
+        radial-gradient(45vw 45vw at 50% 95%, rgba(20,184,166,.20), transparent 70%),
+        #0b1020;
     }
     .container { max-width: 1100px; margin: 0 auto; padding: 20px; }
 
@@ -236,7 +240,6 @@
         width: min(78vw, 1450px);
         max-width: min(78vw, 1450px);
         min-width: 680px;
-        min-height: 72vh;
         max-height: 92vh;
       }
     }
@@ -355,7 +358,9 @@
       white-space: nowrap;
       transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     }
-    .pill input { display: none; }
+    .pill { position: relative; }
+    .pill input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+    .pill:has(input:focus-visible) { outline: 2px solid #7dd3fc; outline-offset: 2px; }
     .pill.on {
       color: #fff;
       border-color: var(--pc, #3b82f6);
@@ -458,23 +463,23 @@
       padding: 18px;
       margin-top: 18px;
     }
-    .week-head { font-size: 0.98rem; font-weight: 700; color: #d8b4fe; margin-bottom: 10px; }
+    .week-head { font-size: 0.98rem; font-weight: 700; color: color-mix(in srgb, var(--a1, #8b5cf6) 45%, #ffffff); margin-bottom: 10px; }
     .chart-wrap { position: relative; height: 320px; }
     .chart-wrap canvas { max-height: 320px; }
 
     /* table — fills the panel; wide min-width so ALL columns readable via scroll */
     .table-wrap { overflow-x: auto; margin-top: 12px; border-radius: 10px; scrollbar-width: thin; max-height: 420px; overflow-y: auto; }
     .table-wrap::-webkit-scrollbar { height: 8px; width: 8px; }
-    .table-wrap::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.45); border-radius: 4px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--a1, #8b5cf6) 45%, transparent); border-radius: 4px; }
     .table-wrap::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
     table { border-collapse: collapse; width: 100%; font-size: 0.88rem; table-layout: auto; }
     th {
-      background: rgba(139, 92, 246, 0.15);
-      color: #d8b4fe;
+      /* opaque (sticky header) and tinted by the panel accent */
+      background-color: color-mix(in srgb, var(--a1, #8b5cf6) 22%, #141a2e);
+      color: color-mix(in srgb, var(--a1, #8b5cf6) 45%, #ffffff);
       font-weight: 600;
       position: sticky;
       top: 0;
-      background-color: #1f1a33;
     }
     th, td { text-align: right; padding: 9px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); white-space: nowrap; }
     th:first-child, td:first-child { text-align: left; }
@@ -502,11 +507,35 @@
     .modal-content .btn { font-size: 1.2rem; }
 
     .footer {
+      max-width: 1100px;
+      margin: 0 auto;
       text-align: center;
       padding: 36px 20px;
       border-top: 1px solid rgba(255, 255, 255, 0.08);
       font-size: 0.85rem;
-      color: #64748b;
+      color: #94a3b8;
+    }
+    .footer .src-list { display: inline-block; text-align: left; }
+    .hint { color: #94a3b8; }
+    .emo { -webkit-text-fill-color: initial; background: none; }
+
+    /* MODAL OPEN — background page must not scroll */
+    html.modal-open, html.modal-open body { overflow: hidden; }
+
+    /* VISIBLE KEYBOARD FOCUS */
+    button:focus-visible, .card-btn:focus-visible, .preset-btn:focus-visible,
+    .seg-btns button:focus-visible, a:focus-visible, select:focus-visible, input:focus-visible {
+      outline: 2px solid #7dd3fc;
+      outline-offset: 2px;
+    }
+
+    /* REDUCED MOTION — keep the spinner (it signals loading) */
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .modal.open, .modal-content { animation: none; }
+      .bento-card, .card-btn, .btn, .seg-btns button, .preset-btn, .pill,
+      .modal-close, .form-group input { transition: none; }
+      .bento-card:hover, .card-btn:hover, .btn:hover { transform: none; }
     }
 
     /* MOBILE — 1 column, blur 11px, chips 2-per-row, full-width stacked
@@ -547,7 +576,7 @@
   <div class="container">
     <!-- HERO -->
     <div class="hero">
-      <h1>⛅ Weather</h1>
+      <h1><span class="emo" aria-hidden="true">⛅</span> Weather</h1>
       <p>Live forecast, 85 years of history, and bulk data export. Open-Meteo, keyless.</p>
     </div>
 
@@ -583,7 +612,7 @@
         <button class="card-btn">Open</button>
       </div>
       <div class="bento-card glass amber" onclick="openModal('anomModal')">
-        <div class="bento-icon">🌡️</div>
+        <div class="bento-icon">🌍</div>
         <h3>Climate Anomaly</h3>
         <p>How much warmer, cooler, wetter or drier was a year than a reference period you pick? Month by month, back to 1940.</p>
         <button class="card-btn">Open</button>
@@ -640,9 +669,9 @@
 
   <!-- MODAL: FORECAST -->
   <div class="modal" id="forecastModal" style="--a1:#3b82f6; --a2:#0ea5e9">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('forecastModal')">×</button>
-      <h2>🌡️ Current Weather</h2>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="forecastModalTitle">
+      <button class="modal-close" aria-label="Close" onclick="closeModal('forecastModal')">×</button>
+      <h2 id="forecastModalTitle"><span class="emo" aria-hidden="true">🌡️</span> Current Weather</h2>
       <div class="form-group">
         <label for="fcCity">City</label>
         <input type="text" id="fcCity" placeholder="e.g. Oradea" onkeydown="if(event.key==='Enter')runForecast()">
@@ -654,9 +683,9 @@
 
   <!-- MODAL: HISTORICAL VIEW -->
   <div class="modal" id="viewModal" style="--a1:#8b5cf6; --a2:#d946ef">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('viewModal')">×</button>
-      <h2>📅 Historical View (1940–today)</h2>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="viewModalTitle">
+      <button class="modal-close" aria-label="Close" onclick="closeModal('viewModal')">×</button>
+      <h2 id="viewModalTitle"><span class="emo" aria-hidden="true">📅</span> Historical View (1940–today)</h2>
       <div class="preset-row" id="hvPresets"></div>
       <div class="form-row">
         <div class="form-group">
@@ -672,7 +701,7 @@
           <div id="hvTo"></div>
         </div>
       </div>
-      <div class="pill-label">Resolution <span style="color:#64748b">(daily ≤35 days · hourly ≤3 days · 15-min ≤1 day, last ~3 months)</span></div>
+      <div class="pill-label">Resolution <span class="hint">(daily ≤35 days · hourly ≤3 days · 15-min ≤1 day, last ~3 months)</span></div>
       <div class="pill-set" id="hvRes">
         <label class="pill on" style="--pc:#d946ef"><input type="radio" name="hvres" value="daily" checked>📆 Daily</label>
         <label class="pill" style="--pc:#d946ef"><input type="radio" name="hvres" value="1h">🕐 1 hour</label>
@@ -687,9 +716,9 @@
 
   <!-- MODAL: DATA DOWNLOADER -->
   <div class="modal" id="dlModal" style="--a1:#22c55e; --a2:#10b981">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('dlModal')">×</button>
-      <h2>💾 Data Downloader</h2>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="dlModalTitle">
+      <button class="modal-close" aria-label="Close" onclick="closeModal('dlModal')">×</button>
+      <h2 id="dlModalTitle"><span class="emo" aria-hidden="true">💾</span> Data Downloader</h2>
       <div class="preset-row" id="dlPresets"></div>
       <div class="form-row">
         <div class="form-group">
@@ -717,10 +746,10 @@
       <div class="dl-row">
         <button class="btn btn-green" onclick="runDownload('xlsx')">📥 Download XLSX</button>
         <button class="btn btn-gray" onclick="runDownload('csv')">📄 Download CSV</button>
-        <button class="btn btn-blue" style="width:auto" onclick="runDownload('json')">🧾 Download JSON</button>
+        <button class="btn btn-gray" onclick="runDownload('json')">🧾 Download JSON</button>
         <button class="btn btn-gray" onclick="runDownload('md')">📝 Download MD</button>
       </div>
-      <p style="color:#64748b;font-size:0.82rem;margin-top:10px">
+      <p class="hint" style="font-size:0.82rem;margin-top:10px">
         MD = readable summary: header + weekly, monthly and yearly aggregates (not the raw rows).
       </p>
       <div id="dlResult"></div>
@@ -729,9 +758,9 @@
 
   <!-- MODAL: CLIMATE ANOMALY -->
   <div class="modal" id="anomModal" style="--a1:#f59e0b; --a2:#ef4444">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('anomModal')">×</button>
-      <h2>🌡️ Climate Anomaly</h2>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="anomModalTitle">
+      <button class="modal-close" aria-label="Close" onclick="closeModal('anomModal')">×</button>
+      <h2 id="anomModalTitle"><span class="emo" aria-hidden="true">🌍</span> Climate Anomaly</h2>
       <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
         Compares one year against a reference period, month by month — temperature and
         precipitation in separate tables. The default reference is 1991–2020, the WMO's
@@ -747,7 +776,7 @@
           <input type="number" id="anYear" min="1940" step="1" inputmode="numeric" placeholder="e.g. 2024">
         </div>
       </div>
-      <div class="pill-label">Reference period <span style="color:#64748b">(what each month is measured against)</span></div>
+      <div class="pill-label">Reference period <span class="hint">(what each month is measured against)</span></div>
       <div id="anBaseline"></div>
       <button class="btn btn-amber" id="anBtn" onclick="runAnomaly()">Compare</button>
       <div id="anResult"></div>
@@ -756,9 +785,9 @@
 
   <!-- MODAL: CLIMATE TRENDS -->
   <div class="modal" id="trendModal" style="--a1:#14b8a6; --a2:#06b6d4">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('trendModal')">×</button>
-      <h2>📊 Climate Trends</h2>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="trendModalTitle">
+      <button class="modal-close" aria-label="Close" onclick="closeModal('trendModal')">×</button>
+      <h2 id="trendModalTitle"><span class="emo" aria-hidden="true">📊</span> Climate Trends</h2>
       <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
         One bar per year, each measured against the reference period below, with a fitted trend line.
         Incomplete years are left out so a part-year cannot masquerade as a dry or cool one.
@@ -774,7 +803,7 @@
       </div>
       <div class="pill-label">Period</div>
       <div class="pill-grid" id="trPeriod"></div>
-      <div class="pill-label">Reference period <span style="color:#64748b">(what each year is measured against)</span></div>
+      <div class="pill-label">Reference period <span class="hint">(what each year is measured against)</span></div>
       <div id="trBaseline"></div>
       <button class="btn btn-teal" id="trBtn" onclick="runTrend()">Show trend</button>
       <div id="trResult"></div>
@@ -783,9 +812,9 @@
 
   <!-- MODAL: CITY COMPARISON -->
   <div class="modal" id="cmpModal" style="--a1:#a78bfa; --a2:#7c3aed">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('cmpModal')">×</button>
-      <h2>⚖️ City Comparison</h2>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="cmpModalTitle">
+      <button class="modal-close" aria-label="Close" onclick="closeModal('cmpModal')">×</button>
+      <h2 id="cmpModalTitle"><span class="emo" aria-hidden="true">⚖️</span> City Comparison</h2>
       <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
         Two cities over the same years, temperature and precipitation in separate tables.
         Only years that are complete in <em>both</em> cities are used, so a gap on one side
@@ -810,9 +839,9 @@
 
   <!-- MODAL: THRESHOLD DAYS -->
   <div class="modal" id="thModal" style="--a1:#fb7185; --a2:#f97316">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal('thModal')">&times;</button>
-      <h2>&#128293; Threshold Days</h2>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="thModalTitle">
+      <button class="modal-close" aria-label="Close" onclick="closeModal('thModal')">&times;</button>
+      <h2 id="thModalTitle"><span class="emo" aria-hidden="true">&#128293;</span> Threshold Days</h2>
       <p style="color:#94a3b8;font-size:0.9rem;margin-bottom:16px">
         Counts of days that cross a limit, year by year. Averages hide what you actually feel &mdash;
         &ldquo;how many days over 35&nbsp;&deg;C&rdquo; does not. Thresholds are always in &deg;C and mm,
@@ -824,7 +853,7 @@
       </div>
       <div class="pill-label">Period</div>
       <div class="pill-grid" id="thPeriod"></div>
-      <div class="pill-label">Rain threshold <span style="color:#64748b">(a wet day is at least this much)</span></div>
+      <div class="pill-label">Rain threshold <span class="hint">(a wet day is at least this much)</span></div>
       <div class="pill-set" id="thWet"></div>
       <div class="pill-label">Temperature thresholds</div>
       <div class="date-parts" style="grid-template-columns:1fr 1fr">
@@ -1070,13 +1099,51 @@
     function precSym() { return UNIT_SYMBOL.precip[UNITS.precip]; }
 
     // ---------- modal plumbing (listeners attached ONCE) ----------
-    function openModal(id) { document.getElementById(id).classList.add('open'); }
-    function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+    // Opener per modal id, so focus can return to the button that opened it.
+    const MODAL_OPENER = {};
+    const FOCUSABLE = 'a[href], button, input, select, textarea, [tabindex]:not([tabindex="-1"])';
+    function modalFocusables(modal) {
+      return Array.from(modal.querySelector('.modal-content').querySelectorAll(FOCUSABLE))
+        .filter(el => !el.disabled && el.getClientRects().length > 0);
+    }
+    function openModal(id) {
+      const modal = document.getElementById(id);
+      MODAL_OPENER[id] = document.activeElement;
+      modal.classList.add('open');
+      document.documentElement.classList.add('modal-open');
+      const first = modal.querySelector('.modal-content input:not([disabled])') ||
+                    modal.querySelector('.modal-close');
+      if (first) first.focus();
+    }
+    function closeModal(id) {
+      const modal = document.getElementById(id);
+      modal.classList.remove('open');
+      if (!document.querySelector('.modal.open')) document.documentElement.classList.remove('modal-open');
+      const opener = MODAL_OPENER[id];
+      MODAL_OPENER[id] = null;
+      if (opener && document.contains(opener) && typeof opener.focus === 'function') opener.focus();
+    }
     document.addEventListener('click', (e) => {
-      if (e.target.classList && e.target.classList.contains('modal')) e.target.classList.remove('open');
+      if (e.target.classList && e.target.classList.contains('modal')) closeModal(e.target.id);
     });
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape') document.querySelectorAll('.modal.open').forEach(m => m.classList.remove('open'));
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal.open').forEach(m => closeModal(m.id));
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const modals = document.querySelectorAll('.modal.open');
+      if (!modals.length) return;
+      const modal = modals[modals.length - 1];
+      const items = modalFocusables(modal);
+      if (!items.length) { e.preventDefault(); return; }
+      const first = items[0], last = items[items.length - 1];
+      const inside = modal.querySelector('.modal-content').contains(document.activeElement);
+      if (e.shiftKey && (document.activeElement === first || !inside)) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !inside)) {
+        e.preventDefault(); first.focus();
+      }
     });
     document.addEventListener('change', (e) => {
       const input = e.target;
@@ -1097,6 +1164,8 @@
       document.querySelectorAll(`#${pillsId} .pill`).forEach(p => {
         const supported = res !== '15min' || FIELDS[p.dataset.pill].minutely;
         p.classList.toggle('disabled', !supported);
+        const input = p.querySelector('input');
+        if (input) input.disabled = !supported;
       });
     }
     // ---------- shared fetch ----------
@@ -3215,7 +3284,8 @@
 
         h += '<div class="table-wrap"><table><tr>' + header.map(x => `<th>${esc(x)}</th>`).join('') + '</tr>';
         tableRows.forEach(r => {
-          h += '<tr>' + r.map((c, i) => `<td${i === 0 ? '' : ' class="warm"'}>${esc(c)}</td>`).join('') + '</tr>';
+          const TH_COL_CLS = ['', 'warm', 'warm', 'wet', 'dry'];
+          h += '<tr>' + r.map((c, i) => `<td${TH_COL_CLS[i] ? ` class="${TH_COL_CLS[i]}"` : ''}>${esc(c)}</td>`).join('') + '</tr>';
         });
         h += '</table></div>';
         if (years[0] < SATELLITE_ERA) {
